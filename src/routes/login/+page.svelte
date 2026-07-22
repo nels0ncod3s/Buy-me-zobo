@@ -117,7 +117,7 @@
 
 				<div class="field-row">
 					<label class="remember"><input type="checkbox" /> Remember me</label>
-					<a href="#" class="forgot">Forgot password?</a>
+					<button type="button" class="forgot">Forgot password?</button>
 				</div>
 
 				<button type="submit" class="btn btn-primary btn-full btn-lg">
@@ -438,8 +438,13 @@
 		accent-color: var(--zobo-800);
 	}
 	.forgot {
+		background: none;
+		border: none;
+		padding: 0;
+		font-family: inherit;
 		color: var(--zobo-800);
 		font-weight: 500;
+		cursor: pointer;
 	}
 	.forgot:hover {
 		color: var(--zobo-600);
