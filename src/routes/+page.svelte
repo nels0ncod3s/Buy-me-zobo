@@ -13,10 +13,19 @@
 		TrendingUp,
 		Link2,
 		Quote,
-		Check
+		Check,
+		Gift,
+		Music2
 	} from '@lucide/svelte';
 
 	let mobileNavOpen = $state(false);
+
+	// --- Hero claim-link form ---
+	let claimUsername = $state('');
+	function claimLink(e) {
+		e.preventDefault();
+		window.location.href = '/signup';
+	}
 
 	// --- Animated hero stat counters ---
 	let statPaid = $state(0);
@@ -47,20 +56,51 @@
 		};
 	});
 
-	// --- Live support ticker ---
-	const feed = [
-		{ name: 'Tomiwa', amount: '₦5,000', note: 'For the Lagos food series 🍲' },
-		{ name: 'Zainab', amount: '₦2,000', note: 'Your beats got me through exams' },
-		{ name: 'Emeka', amount: '₦10,000', note: 'Keep the podcast going!' },
-		{ name: 'Aisha', amount: '₦3,000', note: 'Love the illustrations' },
-		{ name: 'Kunle', amount: '₦1,000', note: 'First time supporter ✨' }
+	// --- Interactive "try it" demo card ---
+	const demoAmounts = [500, 1000, 2000, 5000];
+	let selectedAmount = $state(1000);
+	let demoNote = $state('');
+	let demoFeed = $state([
+		{ id: 1, name: 'Tomiwa', amount: 5000, note: 'Love what you make 🍲' },
+		{ id: 2, name: 'Zainab', amount: 2000, note: 'This got me through the week' },
+		{ id: 3, name: 'Emeka', amount: 10000, note: 'Keep the podcast going!' }
+	]);
+	let demoTotal = $derived(demoFeed.reduce((sum, f) => sum + f.amount, 0));
+	let nextDemoId = 4;
+
+	function sendDemo() {
+		const note = demoNote.trim() || 'Sending some love your way ❤️';
+		demoFeed = [{ id: nextDemoId++, name: 'You', amount: selectedAmount, note }, ...demoFeed].slice(
+			0,
+			4
+		);
+		demoNote = '';
+	}
+
+	// --- "Receive support from your fans" preview card ---
+	const supportTiers = [
+		{ n: '1', amount: 1000 },
+		{ n: '3', amount: 3000 },
+		{ n: '5', amount: 5000 }
+	];
+	let selectedTierIdx = $state(2);
+	let supportAmount = $derived(supportTiers[selectedTierIdx].amount);
+	let supportFee = $derived(Math.round(supportAmount * 0.05));
+	let supportTotal = $derived(supportAmount + supportFee);
+	let cupFillPct = $derived(22 + (selectedTierIdx / (supportTiers.length - 1)) * 73);
+
+	const compareRows = [
+		{ label: 'Fees', us: '5% flat', them: '10–20%' },
+		{ label: 'Payout speed', us: 'Same day', them: '7–30 days' },
+		{ label: 'How fans pay', us: 'Card, transfer, USSD', them: 'Card only, usually' },
+		{ label: 'Your supporter list', us: 'Yours to keep', them: 'Platform owned' }
 	];
 
 	const features = [
 		{
 			icon: Banknote,
 			title: 'Paid in Naira, same day',
-			body: 'Support lands in your Nigerian bank account within hours — no dollar conversion, no week-long holds, no middleman eating your money.'
+			body: 'Support lands in your bank account within hours — no dollar conversion, no week-long holds, no middleman eating your money.'
 		},
 		{
 			icon: Smartphone,
@@ -107,6 +147,46 @@
 		}
 	];
 
+	// --- Scroll-pinned reveal for the "how it works" steps ---
+	let activeStep = $state(0);
+	let pinEnabled = $state(false);
+
+	function pinSteps(node) {
+		const reduce =
+			typeof window !== 'undefined' &&
+			window.matchMedia &&
+			window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (reduce) return { destroy() {} };
+
+		pinEnabled = true;
+		let ticking = false;
+
+		function update() {
+			ticking = false;
+			const rect = node.getBoundingClientRect();
+			const total = node.offsetHeight - window.innerHeight;
+			const progress = total > 0 ? Math.min(Math.max(-rect.top / total, 0), 1) : 0;
+			activeStep = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+		}
+		function onScroll() {
+			if (!ticking) {
+				ticking = true;
+				requestAnimationFrame(update);
+			}
+		}
+
+		update();
+		window.addEventListener('scroll', onScroll, { passive: true });
+		window.addEventListener('resize', onScroll);
+
+		return {
+			destroy() {
+				window.removeEventListener('scroll', onScroll);
+				window.removeEventListener('resize', onScroll);
+			}
+		};
+	}
+
 	const testimonials = [
 		{
 			quote:
@@ -118,9 +198,9 @@
 		},
 		{
 			quote:
-				'Getting paid used to mean waiting on a foreign platform and losing a chunk to conversion. Now it hits my GTBank same day.',
+				'Getting paid used to mean waiting on a foreign platform and losing a chunk to conversion. Now it hits my bank same day.',
 			name: 'Seyi O.',
-			role: 'Music producer, Ibadan',
+			role: 'Music producer, Nairobi',
 			initials: 'SO',
 			bg: '#c98f3a'
 		},
@@ -128,7 +208,7 @@
 			quote:
 				'The messages are the best part. People tell me why my comics matter to them. That keeps me drawing more than the money does.',
 			name: 'Blessing N.',
-			role: 'Illustrator, Abuja',
+			role: 'Illustrator, Accra',
 			initials: 'BN',
 			bg: '#4a0d1f'
 		}
@@ -141,7 +221,7 @@
 		},
 		{
 			q: 'Do my fans need a Zobo account to send money?',
-			a: 'No. Anyone with a Nigerian card, bank transfer, or USSD code can support you in a few taps — they never need to sign up for anything.'
+			a: 'No. Anyone with a local card, bank transfer, or USSD code can support you in a few taps — they never need to sign up for anything.'
 		},
 		{
 			q: 'What does Buy Me Zobo take in fees?',
@@ -158,7 +238,7 @@
 	<title>Buy Me Zobo — Get paid for your work, in Naira</title>
 	<meta
 		name="description"
-		content="The support platform built for Nigerian creators. Your fans send you Zobos, you withdraw to your bank the same day."
+		content="Buy Me Zobo lets your fans support you with a tap — card, transfer or USSD — and it lands in your bank the same day."
 	/>
 	<link rel="canonical" href="https://buymezobo.com/" />
 
@@ -167,7 +247,7 @@
 	<meta property="og:title" content="Buy Me Zobo — Get paid for your work, in Naira" />
 	<meta
 		property="og:description"
-		content="The support platform built for Nigerian creators. Your fans send you Zobos, you withdraw to your bank the same day."
+		content="Buy Me Zobo lets your fans support you with a tap — card, transfer or USSD — and it lands in your bank the same day."
 	/>
 	<meta property="og:url" content="https://buymezobo.com/" />
 
@@ -175,7 +255,7 @@
 	<meta name="twitter:title" content="Buy Me Zobo — Get paid for your work, in Naira" />
 	<meta
 		name="twitter:description"
-		content="The support platform built for Nigerian creators. Your fans send you Zobos, you withdraw to your bank the same day."
+		content="Buy Me Zobo lets your fans support you with a tap — card, transfer or USSD — and it lands in your bank the same day."
 	/>
 </svelte:head>
 
@@ -196,19 +276,21 @@
 				<a href="#faq">FAQ</a>
 			</nav>
 
-			<div class="nav-actions">
-				<a href="/login" class="nav-login">Log in</a>
-				<a href="/signup" class="btn btn-primary">Start my page</a>
-			</div>
+			<div class="nav-right">
+				<div class="nav-actions">
+					<a href="/login" class="nav-login">Log in</a>
+					<a href="/signup" class="btn btn-primary">Start my page</a>
+				</div>
 
-			<button
-				class="nav-toggle"
-				aria-label="Open menu"
-				aria-expanded={mobileNavOpen}
-				onclick={() => (mobileNavOpen = true)}
-			>
-				<Menu size={22} strokeWidth={1.75} />
-			</button>
+				<button
+					class="nav-toggle"
+					aria-label="Open menu"
+					aria-expanded={mobileNavOpen}
+					onclick={() => (mobileNavOpen = true)}
+				>
+					<Menu size={22} strokeWidth={1.75} />
+				</button>
+			</div>
 		</div>
 	</header>
 
@@ -245,18 +327,28 @@
 	<section class="hero">
 		<div class="hero-inner">
 			<div class="hero-copy">
-				<span class="pill" use:reveal>🇳🇬 Built for Nigerian creators</span>
+				<span class="pill" use:reveal>💛 Support that lands the same day</span>
 				<h1 use:reveal={{ delay: 60 }}>Get paid for the work you already give away.</h1>
 				<p class="hero-sub" use:reveal={{ delay: 140 }}>
 					Buy Me Zobo lets your audience support you with a tap — card, transfer or USSD — and the
 					money reaches your bank the same day. No dollars, no waiting, no cut you didn't agree to.
 				</p>
-				<div class="hero-cta" use:reveal={{ delay: 220 }}>
-					<a href="/signup" class="btn btn-primary btn-lg">
-						Start my page <ArrowRight size={18} strokeWidth={2} />
-					</a>
-					<a href="#how" class="btn btn-ghost btn-lg">See how it works</a>
-				</div>
+				<form class="hero-claim" use:reveal={{ delay: 220 }} onsubmit={claimLink}>
+					<div class="hero-claim-field">
+						<span class="hero-claim-prefix">buymezobo.com/</span>
+						<input
+							class="hero-claim-input"
+							type="text"
+							bind:value={claimUsername}
+							placeholder="yourname"
+							autocomplete="off"
+							spellcheck="false"
+						/>
+					</div>
+					<button type="submit" class="hero-claim-btn">
+						Claim your link <ArrowRight size={16} strokeWidth={2.25} />
+					</button>
+				</form>
 
 				<div class="hero-stats" use:reveal={{ delay: 300 }}>
 					<div class="stat">
@@ -274,20 +366,49 @@
 				</div>
 			</div>
 
-			<!-- Live support feed card -->
+			<!-- Interactive "try it" card -->
 			<div class="hero-visual" use:reveal={{ delay: 180, y: 28 }}>
 				<div class="feed-card">
 					<div class="feed-head">
 						<span class="feed-dot"></span>
-						Live support
+						Try sending a test Zobo
 					</div>
+
+					<div class="demo-controls">
+						<div class="demo-amounts">
+							{#each demoAmounts as amt (amt)}
+								<button
+									type="button"
+									class="demo-chip"
+									class:active={selectedAmount === amt}
+									onclick={() => (selectedAmount = amt)}
+								>
+									₦{amt.toLocaleString('en-NG')}
+								</button>
+							{/each}
+						</div>
+						<div class="demo-row">
+							<input
+								class="demo-input"
+								type="text"
+								maxlength="40"
+								placeholder="Add a quick note…"
+								bind:value={demoNote}
+							/>
+							<button type="button" class="demo-send" onclick={sendDemo}>
+								<Gift size={15} strokeWidth={2} /> Send
+							</button>
+						</div>
+					</div>
+
 					<div class="feed-list">
-						{#each feed as f, i}
+						{#each demoFeed as f, i (f.id)}
 							<div class="feed-row" style="--i: {i}">
 								<span class="feed-avatar">{f.name[0]}</span>
 								<div class="feed-body">
 									<p class="feed-line">
-										<strong>{f.name}</strong> sent <strong class="feed-amount">{f.amount}</strong>
+										<strong>{f.name}</strong> sent
+										<strong class="feed-amount">₦{f.amount.toLocaleString('en-NG')}</strong>
 									</p>
 									<p class="feed-note">{f.note}</p>
 								</div>
@@ -296,7 +417,7 @@
 					</div>
 					<div class="feed-foot">
 						<span>buymezobo.com/amara</span>
-						<span class="feed-total">₦21,000 today</span>
+						<span class="feed-total">₦{demoTotal.toLocaleString('en-NG')} today</span>
 					</div>
 				</div>
 			</div>
@@ -313,12 +434,67 @@
 		</div>
 	</div>
 
+	<!-- ============ RECEIVE SUPPORT PREVIEW ============ -->
+	<section class="section support-preview">
+		<div class="section-inner support-grid">
+			<div class="support-copy" use:reveal>
+				<div class="support-cup-lg" style="--fill: {cupFillPct}%" aria-hidden="true">
+					<div class="cup-liquid"></div>
+				</div>
+				<h2>Receive support from your fans.</h2>
+				<p>
+					Add a support button to your page and let your audience back your work directly.
+					Transparent fees, instant visibility into what you'll receive, and same-day withdrawal to
+					your bank.
+				</p>
+			</div>
+
+			<div class="support-card" use:reveal={{ delay: 120 }}>
+				<h3>
+					Show Nelson some love
+					<span class="support-cup-sm" style="--fill: {cupFillPct}%" aria-hidden="true">
+						<span class="cup-liquid"></span>
+					</span>
+				</h3>
+				<div class="support-tiers">
+					{#each supportTiers as tier, i}
+						<button
+							type="button"
+							class="support-tier"
+							class:active={selectedTierIdx === i}
+							onclick={() => (selectedTierIdx = i)}
+						>
+							{tier.n}
+						</button>
+					{/each}
+				</div>
+				<div class="support-breakdown">
+					<div class="support-row">
+						<span>Support amount</span>
+						<span>₦{supportAmount.toLocaleString('en-NG')}</span>
+					</div>
+					<div class="support-row">
+						<span>Service fee (5%)</span>
+						<span>₦{supportFee.toLocaleString('en-NG')}</span>
+					</div>
+					<div class="support-row support-total">
+						<span>Total</span>
+						<span>₦{supportTotal.toLocaleString('en-NG')}</span>
+					</div>
+				</div>
+				<a href="/signup" class="btn btn-primary btn-full btn-lg support-cta">
+					Support ₦{supportTotal.toLocaleString('en-NG')}
+				</a>
+			</div>
+		</div>
+	</section>
+
 	<!-- ============ FEATURES ============ -->
 	<section class="section features" id="features">
 		<div class="section-inner">
 			<div class="section-head" use:reveal>
 				<span class="eyebrow">Why creators switch</span>
-				<h2>Everything an overseas tip jar gets wrong about Nigeria.</h2>
+				<h2>Everything an overseas tip jar gets wrong for you.</h2>
 			</div>
 
 			<div class="feature-grid">
@@ -333,23 +509,56 @@
 		</div>
 	</section>
 
-	<!-- ============ HOW IT WORKS ============ -->
+	<!-- ============ WHY USERS SWITCH (comparison) ============ -->
+	<section class="section compare">
+		<div class="section-inner">
+			<div class="section-head" use:reveal>
+				<span class="eyebrow gold">Side by side</span>
+				<h2>No middlemen. No delays. No limits.</h2>
+			</div>
+
+			<div class="compare-table" use:reveal>
+				<div class="compare-row compare-head">
+					<span></span>
+					<span>Buy Me Zobo</span>
+					<span>Traditional platforms</span>
+				</div>
+				{#each compareRows as row}
+					<div class="compare-row">
+						<span class="compare-label">{row.label}</span>
+						<span class="compare-us">{row.us}</span>
+						<span class="compare-them">{row.them}</span>
+					</div>
+				{/each}
+			</div>
+		</div>
+	</section>
+
+	<!-- ============ HOW IT WORKS (scroll-pinned) ============ -->
 	<section class="section how" id="how">
 		<div class="section-inner">
 			<div class="section-head" use:reveal>
 				<span class="eyebrow">Live in 60 seconds</span>
 				<h2>Three steps between you and your first Zobo.</h2>
 			</div>
+		</div>
 
-			<div class="steps">
-				{#each steps as step, i}
-					<div class="step" use:reveal={{ delay: i * 120 }}>
-						<span class="step-n">{step.n}</span>
-						<h3>{step.title}</h3>
-						<p>{step.body}</p>
-					</div>
-				{/each}
-				<div class="steps-line" aria-hidden="true"></div>
+		<div class="how-pin" class:pin-enabled={pinEnabled} use:pinSteps>
+			<div class="how-sticky">
+				<div class="how-stage">
+					{#each steps as step, i}
+						<div class="how-step" class:active={i === activeStep} aria-hidden={i !== activeStep}>
+							<span class="step-n">{step.n}</span>
+							<h3>{step.title}</h3>
+							<p>{step.body}</p>
+						</div>
+					{/each}
+				</div>
+				<div class="how-dots">
+					{#each steps as step, i}
+						<span class="how-dot" class:active={i === activeStep} aria-hidden="true"></span>
+					{/each}
+				</div>
 			</div>
 		</div>
 	</section>
@@ -397,7 +606,7 @@
 					</a>
 				</div>
 				<ul class="pricing-list">
-					{#each ['₦0 to create your page', '₦0 monthly fee', '5% flat per gift, shown upfront', 'Same-day withdrawals to any Nigerian bank', 'Card, transfer & USSD included', 'Keep 100% of your supporter list'] as item}
+					{#each ['₦0 to create your page', '₦0 monthly fee', '5% flat per gift, shown upfront', 'Same-day withdrawals to your bank', 'Card, transfer & USSD included', 'Keep 100% of your supporter list'] as item}
 						<li><Check size={16} strokeWidth={2.5} /> {item}</li>
 					{/each}
 				</ul>
@@ -440,11 +649,12 @@
 
 	<!-- ============ FOOTER ============ -->
 	<footer class="footer">
+		<span class="footer-watermark" aria-hidden="true">Buy Me Zobo</span>
 		<div class="footer-inner">
 			<div class="footer-brand">
 				<span class="brand-mark" aria-hidden="true"></span>
 				<span class="brand-name">Buy Me Zobo</span>
-				<p>Support for Nigerian creators, in Naira.</p>
+				<p>Support for creators, paid in Naira.</p>
 			</div>
 			<div class="footer-cols">
 				<div class="footer-col">
@@ -469,9 +679,39 @@
 		<div class="footer-bar">
 			<span>© {new Date().getFullYear()} Buy Me Zobo. Made in Lagos.</span>
 			<div class="footer-social">
-				<span class="social-chip" role="img" aria-label="Instagram — coming soon">IG</span>
-				<span class="social-chip" role="img" aria-label="X — coming soon">X</span>
-				<span class="social-chip" role="img" aria-label="TikTok — coming soon">TT</span>
+				<span class="social-chip" role="img" aria-label="Instagram — coming soon">
+					<svg
+						width="16"
+						height="16"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<rect x="3" y="3" width="18" height="18" rx="5" ry="5" />
+						<circle cx="12" cy="12" r="4" />
+						<circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" stroke="none" />
+					</svg>
+				</span>
+				<span class="social-chip" role="img" aria-label="X — coming soon">
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.5"
+						stroke-linecap="round"
+					>
+						<line x1="4" y1="4" x2="20" y2="20" />
+						<line x1="20" y1="4" x2="4" y2="20" />
+					</svg>
+				</span>
+				<span class="social-chip" role="img" aria-label="TikTok — coming soon">
+					<Music2 size={16} strokeWidth={2} />
+				</span>
 			</div>
 		</div>
 	</footer>
@@ -501,7 +741,9 @@
 		font-family: 'Geist Variable', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
 		background: var(--cream);
 		color: var(--ink);
-		overflow-x: hidden;
+		/* clip (not hidden) so this doesn't implicitly turn overflow-y into
+		   'auto' and break position:sticky for the nav / pinned steps section */
+		overflow-x: clip;
 	}
 	* {
 		box-sizing: border-box;
@@ -616,15 +858,16 @@
 		max-width: 1200px;
 		margin: 0 auto;
 		padding: 0.85rem 1.5rem;
-		display: flex;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
-		gap: 2rem;
+		gap: 1rem;
 	}
 	.brand {
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
-		margin-right: auto;
+		justify-self: start;
 	}
 	.brand-mark {
 		width: 28px;
@@ -645,6 +888,8 @@
 		font-size: 0.92rem;
 		font-weight: 500;
 		color: var(--zobo-900);
+		justify-self: center;
+		white-space: nowrap;
 	}
 	.nav-links a {
 		position: relative;
@@ -663,10 +908,18 @@
 	.nav-links a:hover::after {
 		width: 100%;
 	}
+	.nav-right {
+		display: flex;
+		align-items: center;
+		justify-self: end;
+	}
 	.nav-actions {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+	}
+	.nav-actions .btn-primary {
+		box-shadow: none;
 	}
 	.nav-login {
 		font-size: 0.92rem;
@@ -700,11 +953,15 @@
 	.hero-inner {
 		max-width: 1200px;
 		margin: 0 auto;
-		padding: clamp(3rem, 7vw, 5.5rem) 1.5rem clamp(3.5rem, 8vw, 6rem);
+		padding: clamp(1.25rem, 3vw, 2.25rem) 1.5rem clamp(3.5rem, 8vw, 6rem);
 		display: grid;
 		grid-template-columns: 1.05fr 0.95fr;
 		gap: clamp(2rem, 5vw, 4rem);
 		align-items: center;
+	}
+	.hero-copy,
+	.hero-visual {
+		min-width: 0;
 	}
 	.pill {
 		display: inline-block;
@@ -727,10 +984,65 @@
 		max-width: 520px;
 		margin: 1.35rem 0 2rem;
 	}
-	.hero-cta {
+	.hero-claim {
 		display: flex;
-		gap: 0.9rem;
-		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		max-width: 480px;
+		background: #fffdf9;
+		border: 1.5px solid rgba(92, 16, 41, 0.18);
+		border-radius: 999px;
+		padding: 0.35rem 0.35rem 0.35rem 1.1rem;
+		transition: border-color 0.15s ease;
+	}
+	.hero-claim:focus-within {
+		border-color: var(--zobo-700);
+	}
+	.hero-claim-field {
+		display: flex;
+		align-items: center;
+		flex: 1;
+		min-width: 0;
+	}
+	.hero-claim-prefix {
+		font-size: 0.92rem;
+		color: #9a7a6f;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+	.hero-claim-input {
+		flex: 1;
+		min-width: 0;
+		border: none;
+		outline: none;
+		background: none;
+		font-family: inherit;
+		font-size: 0.92rem;
+		color: var(--ink);
+		padding: 0.55rem 0;
+	}
+	.hero-claim-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-family: inherit;
+		font-weight: 600;
+		font-size: 0.88rem;
+		padding: 0.65rem 1.15rem;
+		border-radius: 999px;
+		border: none;
+		background: var(--zobo-800);
+		color: var(--cream);
+		cursor: pointer;
+		flex-shrink: 0;
+		white-space: nowrap;
+		transition:
+			background 0.15s ease,
+			transform 0.15s ease;
+	}
+	.hero-claim-btn:hover {
+		background: var(--zobo-700);
+		transform: translateY(-1px);
 	}
 	.hero-stats {
 		display: flex;
@@ -754,7 +1066,7 @@
 		margin-top: 0.15rem;
 	}
 
-	/* Live feed card */
+	/* Interactive demo card */
 	.hero-visual {
 		display: flex;
 		justify-content: center;
@@ -787,6 +1099,7 @@
 		background: #d64d6f;
 		box-shadow: 0 0 0 0 rgba(214, 77, 111, 0.5);
 		animation: pulse 2s infinite;
+		flex-shrink: 0;
 	}
 	@keyframes pulse {
 		0% {
@@ -799,8 +1112,80 @@
 			box-shadow: 0 0 0 0 rgba(214, 77, 111, 0);
 		}
 	}
+	.demo-controls {
+		padding: 0.9rem 1.25rem 0.7rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		border-bottom: 1px solid rgba(92, 16, 41, 0.08);
+	}
+	.demo-amounts {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+	.demo-chip {
+		font-family: inherit;
+		font-size: 0.78rem;
+		font-weight: 600;
+		padding: 0.35rem 0.7rem;
+		border-radius: 999px;
+		border: 1.5px solid rgba(92, 16, 41, 0.18);
+		background: transparent;
+		color: var(--zobo-800);
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.demo-chip.active {
+		background: var(--zobo-800);
+		border-color: var(--zobo-800);
+		color: var(--cream);
+	}
+	.demo-row {
+		display: flex;
+		gap: 0.5rem;
+	}
+	.demo-input {
+		flex: 1;
+		min-width: 0;
+		font-family: inherit;
+		font-size: 0.85rem;
+		padding: 0.55rem 0.75rem;
+		border-radius: 10px;
+		border: 1.5px solid rgba(92, 16, 41, 0.15);
+		background: var(--cream);
+		color: var(--ink);
+	}
+	.demo-input:focus {
+		outline: none;
+		border-color: var(--zobo-700);
+	}
+	.demo-send {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-family: inherit;
+		font-size: 0.85rem;
+		font-weight: 600;
+		padding: 0.55rem 0.9rem;
+		border-radius: 10px;
+		border: none;
+		background: var(--zobo-800);
+		color: var(--cream);
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: background 0.15s ease;
+	}
+	.demo-send:hover {
+		background: var(--zobo-700);
+	}
 	.feed-list {
 		padding: 0.5rem;
+		max-height: 232px;
+		overflow: hidden;
 	}
 	.feed-row {
 		display: flex;
@@ -852,6 +1237,9 @@
 		margin: 0.15rem 0 0;
 		font-size: 0.8rem;
 		color: #9a7a6f;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.feed-foot {
 		display: flex;
@@ -899,6 +1287,181 @@
 		}
 	}
 
+	/* ============ RECEIVE SUPPORT PREVIEW ============ */
+	.support-preview {
+		background: var(--cream-2);
+	}
+	.support-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: clamp(2rem, 5vw, 4rem);
+		align-items: center;
+	}
+	.support-copy,
+	.support-card {
+		min-width: 0;
+	}
+	.support-copy h2 {
+		font-size: clamp(1.9rem, 3.6vw, 2.6rem);
+		color: var(--zobo-950);
+		margin: 1.25rem 0 1rem;
+	}
+	.support-copy p {
+		font-size: 1rem;
+		line-height: 1.6;
+		color: #6b5049;
+		max-width: 460px;
+	}
+
+	/* Cup-fill motif, shared by the big and small variants */
+	.support-cup-lg,
+	.support-cup-sm {
+		position: relative;
+		overflow: hidden;
+		border: solid var(--zobo-800);
+		border-top: none;
+		border-radius: 0 0 20px 20px;
+		background: rgba(92, 16, 41, 0.05);
+		flex-shrink: 0;
+	}
+	.support-cup-lg {
+		display: block;
+		width: 64px;
+		height: 78px;
+		border-width: 3px;
+	}
+	.support-cup-lg::after {
+		content: '';
+		position: absolute;
+		right: -14px;
+		top: 12px;
+		width: 14px;
+		height: 24px;
+		border: 3px solid var(--zobo-800);
+		border-left: none;
+		border-radius: 0 12px 12px 0;
+	}
+	.support-cup-sm {
+		display: inline-block;
+		width: 20px;
+		height: 24px;
+		border-width: 2px;
+		border-radius: 0 0 8px 8px;
+	}
+	.cup-liquid {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: var(--fill, 40%);
+		background: linear-gradient(180deg, var(--gold-light), var(--gold));
+		transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.support-card {
+		background: #fffdf9;
+		border: 1px solid rgba(92, 16, 41, 0.12);
+		border-radius: 22px;
+		padding: 1.75rem;
+		box-shadow: 0 30px 60px -24px rgba(43, 6, 15, 0.28);
+	}
+	.support-card h3 {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-size: 1.1rem;
+		color: var(--zobo-950);
+		margin: 0 0 1.25rem;
+	}
+	.support-tiers {
+		display: flex;
+		gap: 0.6rem;
+		margin-bottom: 1.5rem;
+	}
+	.support-tier {
+		flex: 1;
+		padding: 0.6rem;
+		border-radius: 12px;
+		border: 1.5px solid rgba(92, 16, 41, 0.15);
+		background: transparent;
+		font-family: inherit;
+		font-weight: 700;
+		font-size: 0.95rem;
+		color: var(--zobo-800);
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.support-tier.active {
+		background: var(--zobo-800);
+		border-color: var(--zobo-800);
+		color: var(--cream);
+	}
+	.support-breakdown {
+		border-top: 1px solid rgba(92, 16, 41, 0.1);
+		border-bottom: 1px solid rgba(92, 16, 41, 0.1);
+		padding: 1rem 0;
+		margin-bottom: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+	.support-row {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.9rem;
+		color: #6b5049;
+	}
+	.support-row.support-total {
+		font-weight: 700;
+		color: var(--zobo-950);
+		font-size: 1rem;
+	}
+
+	/* ============ WHY USERS SWITCH (comparison) ============ */
+	.compare {
+		background: var(--cream);
+	}
+	.compare-table {
+		background: linear-gradient(165deg, var(--zobo-900), var(--zobo-950));
+		border-radius: 22px;
+		padding: 0.5rem clamp(1rem, 3vw, 2rem);
+		box-shadow: 0 30px 60px -30px rgba(43, 6, 15, 0.5);
+	}
+	.compare-row {
+		display: grid;
+		grid-template-columns: 1.2fr 1fr 1fr;
+		gap: 1rem;
+		padding: 1.1rem 0.5rem;
+		align-items: center;
+	}
+	.compare-row + .compare-row {
+		border-top: 1px solid rgba(251, 243, 231, 0.1);
+	}
+	.compare-head {
+		font-size: 0.72rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: rgba(251, 243, 231, 0.5);
+	}
+	.compare-label {
+		font-weight: 600;
+		color: var(--cream);
+		font-size: 0.95rem;
+	}
+	.compare-us {
+		font-weight: 700;
+		color: var(--gold-light);
+		font-size: 0.95rem;
+	}
+	.compare-them {
+		color: rgba(251, 243, 231, 0.55);
+		font-size: 0.9rem;
+	}
+
 	/* ============ FEATURES ============ */
 	.features {
 		background: var(--cream);
@@ -915,13 +1478,11 @@
 		padding: 1.75rem;
 		transition:
 			transform 0.2s ease,
-			box-shadow 0.2s ease,
 			border-color 0.2s ease;
 	}
 	.feature-card:hover {
 		transform: translateY(-4px);
-		box-shadow: 0 18px 36px -20px rgba(43, 6, 15, 0.28);
-		border-color: rgba(92, 16, 41, 0.2);
+		border-color: rgba(92, 16, 41, 0.25);
 	}
 	.feature-icon {
 		display: inline-flex;
@@ -946,34 +1507,63 @@
 		color: #6b5049;
 	}
 
-	/* ============ HOW IT WORKS ============ */
+	/* ============ HOW IT WORKS (scroll-pinned) ============ */
 	.how {
 		background: var(--cream-2);
 	}
-	.steps {
+	.how-pin {
 		position: relative;
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 1.5rem;
 	}
-	.steps-line {
-		position: absolute;
-		top: 26px;
-		left: 16%;
-		right: 16%;
-		height: 2px;
-		background: repeating-linear-gradient(
-			90deg,
-			rgba(92, 16, 41, 0.25) 0 8px,
-			transparent 8px 16px
-		);
-		z-index: 0;
+	.how-pin.pin-enabled {
+		height: 300vh;
 	}
-	.step {
+	.how-sticky {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2rem;
+		min-height: 40vh;
+	}
+	.how-pin.pin-enabled .how-sticky {
+		position: sticky;
+		top: 0;
+		height: 100vh;
+		min-height: 0;
+	}
+	.how-stage {
 		position: relative;
-		z-index: 1;
+		width: 100%;
+		max-width: 420px;
+		padding: 0 1.5rem;
+	}
+	.how-step {
 		text-align: center;
-		padding: 0 0.5rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+	.how-pin.pin-enabled .how-step {
+		position: absolute;
+		inset: 0;
+		opacity: 0;
+		transform: translateY(18px);
+		transition:
+			opacity 0.45s ease,
+			transform 0.45s ease;
+		pointer-events: none;
+	}
+	.how-pin.pin-enabled .how-step.active {
+		opacity: 1;
+		transform: none;
+		pointer-events: auto;
+		position: relative;
+	}
+	.how-pin:not(.pin-enabled) .how-stage {
+		display: flex;
+		flex-direction: column;
+		gap: 2.5rem;
+		max-width: 480px;
 	}
 	.step-n {
 		display: inline-flex;
@@ -989,17 +1579,37 @@
 		margin-bottom: 1.1rem;
 		box-shadow: 0 8px 18px -8px rgba(92, 16, 41, 0.6);
 	}
-	.step h3 {
-		font-size: 1.2rem;
-		margin-bottom: 0.5rem;
+	.how-step h3 {
+		font-size: 1.35rem;
+		margin-bottom: 0.6rem;
 		color: var(--zobo-950);
 	}
-	.step p {
+	.how-step p {
 		margin: 0 auto;
-		max-width: 260px;
-		font-size: 0.92rem;
-		line-height: 1.55;
+		max-width: 320px;
+		font-size: 0.98rem;
+		line-height: 1.6;
 		color: #6b5049;
+	}
+	.how-dots {
+		display: flex;
+		gap: 0.5rem;
+	}
+	.how-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: rgba(92, 16, 41, 0.18);
+		transition:
+			background 0.2s ease,
+			transform 0.2s ease;
+	}
+	.how-dot.active {
+		background: var(--zobo-700);
+		transform: scale(1.3);
+	}
+	.how-pin:not(.pin-enabled) .how-dots {
+		display: none;
 	}
 
 	/* ============ STORIES ============ */
@@ -1199,11 +1809,29 @@
 
 	/* ============ FOOTER ============ */
 	.footer {
+		position: relative;
 		background: var(--zobo-950);
 		color: rgba(251, 243, 231, 0.7);
 		border-top: 1px solid rgba(251, 243, 231, 0.1);
+		overflow: hidden;
+	}
+	.footer-watermark {
+		position: absolute;
+		left: 50%;
+		bottom: -8%;
+		transform: translateX(-50%);
+		font-size: clamp(5rem, 22vw, 15rem);
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		color: rgba(251, 243, 231, 0.032);
+		white-space: nowrap;
+		pointer-events: none;
+		z-index: 0;
+		line-height: 1;
 	}
 	.footer-inner {
+		position: relative;
+		z-index: 1;
 		max-width: 1120px;
 		margin: 0 auto;
 		padding: 3.5rem 1.5rem 2.5rem;
@@ -1256,6 +1884,8 @@
 		cursor: default;
 	}
 	.footer-bar {
+		position: relative;
+		z-index: 1;
 		max-width: 1120px;
 		margin: 0 auto;
 		padding: 1.5rem;
@@ -1293,6 +1923,9 @@
 		.nav-links,
 		.nav-actions {
 			display: none;
+		}
+		.nav-inner {
+			grid-template-columns: 1fr auto;
 		}
 		.nav-toggle {
 			display: flex;
@@ -1339,15 +1972,31 @@
 		.hero-visual {
 			order: -1;
 		}
+		.hero-copy {
+			text-align: center;
+		}
+		.hero-claim {
+			margin: 0 auto;
+		}
+		.hero-stats {
+			justify-content: center;
+			text-align: center;
+		}
+		.support-grid {
+			grid-template-columns: 1fr;
+			text-align: center;
+		}
+		.support-cup-lg {
+			margin: 0 auto;
+		}
+		.support-copy p {
+			margin: 0 auto;
+		}
 		.feature-grid {
 			grid-template-columns: 1fr;
 		}
-		.steps {
-			grid-template-columns: 1fr;
-			gap: 2.5rem;
-		}
-		.steps-line {
-			display: none;
+		.how-pin.pin-enabled {
+			height: 210vh;
 		}
 		.story-grid {
 			grid-template-columns: 1fr;
@@ -1355,21 +2004,91 @@
 		.pricing-box {
 			grid-template-columns: 1fr;
 		}
+		.pricing-left {
+			text-align: center;
+		}
+		.pricing-left a.btn {
+			margin: 0 auto;
+		}
+		.footer-watermark {
+			/* nowrap at the desktop clamp would overflow a narrow viewport far
+			   enough to clip nearly the whole word — shrink it so it still
+			   reads as "Buy Me Zobo" instead of a random slice of letters. */
+			font-size: clamp(2.25rem, 13vw, 6rem);
+			bottom: -5%;
+		}
 		.footer-inner {
 			grid-template-columns: 1fr;
-			gap: 2rem;
+			gap: 1.25rem;
+			padding: 1.5rem 1.5rem 1rem;
+			text-align: center;
+		}
+		.footer-brand {
+			align-items: center;
+		}
+		.footer-cols {
+			text-align: left;
+			gap: 1.25rem;
+		}
+		.footer-bar {
+			padding: 1rem 1.5rem;
+		}
+		.final-inner {
+			padding: clamp(2.5rem, 8vw, 4rem) 1.5rem;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.section {
+			padding: clamp(3rem, 12vw, 4.5rem) 0;
+		}
+		.demo-row {
+			flex-direction: column;
+		}
+		.demo-send {
+			justify-content: center;
+		}
+		.feed-note {
+			white-space: normal;
+		}
+		.hero-claim {
+			flex-direction: column;
+			align-items: stretch;
+			border-radius: 20px;
+			padding: 0.4rem;
+			gap: 0.4rem;
+		}
+		.hero-claim-field {
+			padding: 0.3rem 0.6rem;
+		}
+		.hero-claim-btn {
+			justify-content: center;
+			border-radius: 14px;
+		}
+		.compare-row {
+			gap: 0.5rem;
+			padding: 0.9rem 0.25rem;
+		}
+		.compare-label,
+		.compare-us,
+		.compare-them {
+			font-size: 0.8rem;
 		}
 	}
 
 	@media (max-width: 520px) {
 		.footer-cols {
-			grid-template-columns: 1fr 1fr;
+			gap: 0.75rem;
 		}
 		.hero-stats {
 			gap: 1.25rem 2rem;
 		}
 		.footer-bar {
-			justify-content: flex-start;
+			justify-content: center;
+			text-align: center;
+		}
+		.stat {
+			align-items: center;
 		}
 	}
 

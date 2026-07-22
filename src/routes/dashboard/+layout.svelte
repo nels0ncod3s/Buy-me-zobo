@@ -3,13 +3,7 @@
 	import {
 		LayoutDashboard,
 		Heart,
-		Gift,
-		FileText,
-		BarChart3,
 		Wallet,
-		CircleDollarSign,
-		Share2,
-		Bell,
 		Settings,
 		CircleHelp,
 		PanelLeft,
@@ -22,51 +16,56 @@
 	let sidebarOpen = $state(false); // mobile drawer
 	let collapsed = $state(false); // web-view collapsed rail
 
-	// Grouped navigation. Groups get a heading label that hides when collapsed.
+	// Kept deliberately short for an MVP — every item here has a real page behind it.
 	const navGroups = [
 		{
 			heading: 'Overview',
-			items: [
-				{ label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-				{ label: 'Supporters', icon: Heart, href: '#' },
-				{ label: 'Analytics', icon: BarChart3, href: '#' }
-			]
+			items: [{ label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' }]
 		},
 		{
 			heading: 'Earn',
 			items: [
-				{ label: 'Memberships', icon: Gift, href: '#' },
-				{ label: 'Posts', icon: FileText, href: '#' },
-				{ label: 'Payouts', icon: Wallet, href: '#' },
-				{ label: 'Billing', icon: CircleDollarSign, href: '#' }
+				{ label: 'Supporters', icon: Heart, href: '/dashboard/supporters' },
+				{ label: 'Payouts', icon: Wallet, href: '/dashboard/payouts' }
 			]
 		},
 		{
 			heading: 'Account',
-			items: [
-				{ label: 'Share page', icon: Share2, href: '#' },
-				{ label: 'Notifications', icon: Bell, href: '#' },
-				{ label: 'Settings', icon: Settings, href: '#' }
-			]
+			items: [{ label: 'Settings', icon: Settings, href: '/dashboard/settings' }]
 		}
 	];
 
 	let currentPath = $derived($page.url.pathname);
+	let currentLabel = $derived(
+		navGroups.flatMap((g) => g.items).find((item) => item.href === currentPath)?.label ?? 'Home'
+	);
 </script>
 
 <div class="canvas" class:collapsed>
 	<!-- ============ FLAT SIDEBAR (on the canvas) ============ -->
 	<aside class="sidebar" class:open={sidebarOpen}>
 		<div class="sidebar-top">
-			<a href="/" class="sidebar-mark" aria-label="Buy Me Zobo home"></a>
-			<!-- Web: collapse rail. Mobile: close (X) -->
-			<button
-				class="sidebar-toggle desktop-toggle"
-				aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-				onclick={() => (collapsed = !collapsed)}
-			>
-				<PanelLeft size={18} strokeWidth={1.75} />
-			</button>
+			<!-- Collapsed (web only): the logo itself expands the rail back out. -->
+			<a
+				href="/"
+				class="sidebar-mark"
+				aria-label={collapsed ? 'Expand sidebar' : 'Buy Me Zobo home'}
+				onclick={(e) => {
+					if (collapsed) {
+						e.preventDefault();
+						collapsed = false;
+					}
+				}}
+			></a>
+			{#if !collapsed}
+				<button
+					class="sidebar-toggle desktop-toggle"
+					aria-label="Collapse sidebar"
+					onclick={() => (collapsed = true)}
+				>
+					<PanelLeft size={18} strokeWidth={1.75} />
+				</button>
+			{/if}
 			<button
 				class="sidebar-toggle mobile-toggle"
 				aria-label="Close menu"
@@ -81,33 +80,30 @@
 				<div class="nav-group">
 					<span class="nav-heading">{group.heading}</span>
 					{#each group.items as item}
-						{#if item.href === '#'}
-							<button type="button" class="nav-item" title={collapsed ? item.label : undefined}>
-								<item.icon size={18} strokeWidth={1.75} />
-								<span class="nav-label">{item.label}</span>
-							</button>
-						{:else}
-							<a
-								href={item.href}
-								class="nav-item"
-								class:active={item.href === '/dashboard' && currentPath === '/dashboard'}
-								title={collapsed ? item.label : undefined}
-								onclick={() => (sidebarOpen = false)}
-							>
-								<item.icon size={18} strokeWidth={1.75} />
-								<span class="nav-label">{item.label}</span>
-							</a>
-						{/if}
+						<a
+							href={item.href}
+							class="nav-item"
+							class:active={currentPath === item.href}
+							title={collapsed ? item.label : undefined}
+							onclick={() => (sidebarOpen = false)}
+						>
+							<item.icon size={18} strokeWidth={1.75} />
+							<span class="nav-label">{item.label}</span>
+						</a>
 					{/each}
 				</div>
 			{/each}
 		</nav>
 
 		<div class="sidebar-foot">
-			<button type="button" class="nav-item" title={collapsed ? 'Help & support' : undefined}>
+			<a
+				href="mailto:hello@buymezobo.com"
+				class="nav-item"
+				title={collapsed ? 'Help & support' : undefined}
+			>
 				<CircleHelp size={18} strokeWidth={1.75} />
 				<span class="nav-label">Help &amp; support</span>
-			</button>
+			</a>
 			<a href="/" class="nav-user" title={collapsed ? 'Your account' : undefined}>
 				<span class="nav-user-avatar">N</span>
 				<span class="nav-label nav-user-meta">
@@ -127,10 +123,17 @@
 	<main class="island">
 		<header class="island-head">
 			<div class="island-head-left">
-				<button class="island-menu-btn" onclick={() => (sidebarOpen = true)} aria-label="Open menu">
+				<button
+					class="island-menu-btn"
+					onclick={() => {
+						collapsed = false;
+						sidebarOpen = true;
+					}}
+					aria-label="Open menu"
+				>
 					<Menu size={18} strokeWidth={1.75} />
 				</button>
-				<h1 class="island-title">Home</h1>
+				<h1 class="island-title">{currentLabel}</h1>
 			</div>
 		</header>
 
@@ -189,8 +192,8 @@
 		flex-direction: column;
 		padding: 1.5rem 1rem;
 		height: 100%;
-		overflow-y: auto;
-		overflow-x: hidden;
+		/* Stationary by design — the MVP nav is short enough to never need to scroll. */
+		overflow: hidden;
 	}
 	.sidebar-top {
 		display: flex;
@@ -213,6 +216,7 @@
 		cursor: pointer;
 		padding: 0.25rem;
 		display: flex;
+		flex-shrink: 0;
 	}
 	.sidebar-toggle:hover {
 		color: var(--muted);
@@ -224,7 +228,7 @@
 	.sidebar-nav {
 		display: flex;
 		flex-direction: column;
-		gap: 1.25rem;
+		gap: 1.5rem;
 		flex: 1;
 	}
 	.nav-group {
@@ -281,9 +285,6 @@
 	.canvas.collapsed .sidebar-top {
 		justify-content: center;
 	}
-	.canvas.collapsed .desktop-toggle {
-		display: none;
-	}
 	.canvas.collapsed .nav-label {
 		opacity: 0;
 		width: 0;
@@ -301,7 +302,7 @@
 		padding: 0;
 	}
 	.canvas.collapsed .sidebar-nav {
-		gap: 0.4rem;
+		gap: 0.6rem;
 	}
 	.canvas.collapsed .nav-user {
 		justify-content: center;
@@ -407,7 +408,7 @@
 
 	.island-body {
 		flex: 1;
-		overflow: hidden;
+		overflow-y: auto;
 		min-height: 0;
 		display: flex;
 	}
@@ -430,6 +431,12 @@
 			background: var(--canvas);
 			transform: translateX(-100%);
 			transition: transform 0.25s ease;
+			overflow-y: auto;
+		}
+		/* The collapsed-rail centering is web-only — force the normal
+		   logo-left / close-right layout in the mobile drawer regardless. */
+		.canvas.collapsed .sidebar-top {
+			justify-content: space-between;
 		}
 		.sidebar.open {
 			transform: translateX(0);

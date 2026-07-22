@@ -178,6 +178,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
+		min-width: 0;
 	}
 	.back-link {
 		display: inline-flex;
@@ -267,6 +268,9 @@
 		display: flex;
 		flex-direction: column;
 		padding: 2rem 2.5rem;
+		/* Grid items default to min-width:auto, which lets a 1fr track blow out
+		   past its container when content can't shrink further — clamp it. */
+		min-width: 0;
 	}
 	.auth-mobile-top {
 		display: flex;

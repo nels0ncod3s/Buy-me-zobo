@@ -1,7 +1,7 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn-svelte/tailwind.css";
-@import "@fontsource-variable/geist";
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
+@import '@fontsource-variable/geist';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -128,5 +128,26 @@
 	}
 	body {
 		font-family: 'Geist Variable', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
+	}
+	html,
+	body {
+		/* Zoom is disabled via the viewport meta tag; this backs it up on
+		   browsers that honor touch-action but ignore user-scalable=no. */
+		touch-action: pan-x pan-y;
+	}
+}
+
+/* Scrolling stays fully functional on mobile — this just hides the visible
+   scrollbar track/thumb so scrollable panels (the dashboard body, the
+   mobile sidebar drawer, etc.) don't show chrome scrollbars on small
+   screens, and don't lose layout width to a reserved scrollbar gutter. */
+@media (max-width: 900px) {
+	* {
+		scrollbar-width: none;
+	}
+	*::-webkit-scrollbar {
+		display: none;
+		width: 0;
+		height: 0;
 	}
 }
