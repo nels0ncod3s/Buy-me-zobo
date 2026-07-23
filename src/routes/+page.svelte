@@ -163,6 +163,7 @@
 	// --- Scroll-pinned reveal for the "how it works" steps ---
 	let activeStep = $state(0);
 	let pinEnabled = $state(false);
+	let stepProgress = $state(0); // continuous 0→1 for the progress rail
 
 	function pinSteps(node) {
 		const reduce =
@@ -179,6 +180,9 @@
 			const rect = node.getBoundingClientRect();
 			const total = node.offsetHeight - window.innerHeight;
 			const progress = total > 0 ? Math.min(Math.max(-rect.top / total, 0), 1) : 0;
+			stepProgress = progress;
+			// Give each step an equal, generous band of scroll. A short hold at the
+			// very start and end keeps the first/last step from feeling clipped.
 			activeStep = Math.min(steps.length - 1, Math.floor(progress * steps.length));
 		}
 		function onScroll() {
@@ -573,10 +577,15 @@
 						</div>
 					{/each}
 				</div>
-				<div class="how-dots">
-					{#each steps as step, i}
-						<span class="how-dot" class:active={i === activeStep} aria-hidden="true"></span>
-					{/each}
+				<div class="how-rail" aria-hidden="true">
+					<div class="how-rail-track">
+						<span class="how-rail-fill" style="width: {stepProgress * 100}%"></span>
+					</div>
+					<div class="how-rail-nodes">
+						{#each steps as step, i}
+							<span class="how-node" class:active={i <= activeStep}>{i + 1}</span>
+						{/each}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -1533,8 +1542,11 @@
 	.how-pin {
 		position: relative;
 	}
+	/* Total height minus the 100vh sticky viewport = the scroll budget shared
+	   across the steps. 360vh → ~87vh of scroll per step, so each one holds
+	   long enough to read before the next. */
 	.how-pin.pin-enabled {
-		height: 300vh;
+		height: 360vh;
 	}
 	.how-sticky {
 		display: flex;
@@ -1610,24 +1622,61 @@
 		line-height: 1.6;
 		color: #6b5049;
 	}
-	.how-dots {
+	/* Numbered progress rail: a track that fills continuously as you scroll,
+	   with a node lighting up as each step becomes active. */
+	.how-rail {
+		--node: 30px;
+		position: relative;
+		width: min(320px, 78vw);
+	}
+	.how-rail-track {
+		position: absolute;
+		top: 50%;
+		left: calc(var(--node) / 2);
+		right: calc(var(--node) / 2);
+		height: 3px;
+		transform: translateY(-50%);
+		background: rgba(92, 16, 41, 0.14);
+		border-radius: 999px;
+		overflow: hidden;
+	}
+	.how-rail-fill {
+		display: block;
+		height: 100%;
+		background: linear-gradient(90deg, var(--zobo-700), var(--gold));
+		border-radius: 999px;
+		transition: width 0.12s linear;
+	}
+	.how-rail-nodes {
+		position: relative;
 		display: flex;
-		gap: 0.5rem;
+		justify-content: space-between;
 	}
-	.how-dot {
-		width: 8px;
-		height: 8px;
+	.how-node {
+		width: var(--node);
+		height: var(--node);
 		border-radius: 50%;
-		background: rgba(92, 16, 41, 0.18);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.8rem;
+		font-weight: 700;
+		background: var(--cream);
+		border: 2px solid rgba(92, 16, 41, 0.16);
+		color: var(--zobo-800);
 		transition:
-			background 0.2s ease,
-			transform 0.2s ease;
+			background 0.3s ease,
+			border-color 0.3s ease,
+			color 0.3s ease,
+			transform 0.3s ease;
 	}
-	.how-dot.active {
-		background: var(--zobo-700);
-		transform: scale(1.3);
+	.how-node.active {
+		background: var(--zobo-800);
+		border-color: var(--zobo-800);
+		color: var(--cream);
+		transform: scale(1.08);
 	}
-	.how-pin:not(.pin-enabled) .how-dots {
+	.how-pin:not(.pin-enabled) .how-rail {
 		display: none;
 	}
 
@@ -2014,8 +2063,10 @@
 		.feature-grid {
 			grid-template-columns: 1fr;
 		}
+		/* Was 210vh → only ~37vh of scroll per step, so a quick swipe blew
+		   through 1→3. Match the desktop budget so mobile paces the same. */
 		.how-pin.pin-enabled {
-			height: 210vh;
+			height: 340vh;
 		}
 		.story-grid {
 			grid-template-columns: 1fr;
