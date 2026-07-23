@@ -129,6 +129,12 @@
 	body {
 		font-family: 'Geist Variable', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
 	}
+	html,
+	body {
+		/* Zoom is disabled via the viewport meta tag; this backs it up on
+		   browsers that honor touch-action but ignore user-scalable=no. */
+		touch-action: pan-x pan-y;
+	}
 }
 
 /* Scrolling stays fully functional on mobile — this just hides the visible

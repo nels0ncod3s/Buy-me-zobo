@@ -1,5 +1,5 @@
 <script>
-	import { page } from '$app/state';
+	import { page } from '$app/stores';
 	import {
 		LayoutDashboard,
 		Heart,
@@ -35,16 +35,11 @@
 		}
 	];
 
-	let currentPath = $derived(page.url.pathname);
+	let currentPath = $derived($page.url.pathname);
 	let currentLabel = $derived(
 		navGroups.flatMap((g) => g.items).find((item) => item.href === currentPath)?.label ?? 'Home'
 	);
 </script>
-
-<svelte:head>
-	<!-- The dashboard is a private, authenticated area — keep it out of search results. -->
-	<meta name="robots" content="noindex, nofollow" />
-</svelte:head>
 
 <div class="canvas" class:collapsed>
 	<!-- ============ FLAT SIDEBAR (on the canvas) ============ -->

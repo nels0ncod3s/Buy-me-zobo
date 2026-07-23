@@ -1,35 +1,20 @@
 <script>
-	import { onMount } from 'svelte';
-	import { Check, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from '@lucide/svelte';
+	import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from '@lucide/svelte';
 
-	// Static/mock two-step signup — ends at the dashboard.
-	let step = $state(1);
-	let username = $state('');
-
-	// Prefill the handle when the visitor already typed one on the landing page
-	// (e.g. arriving via /signup?u=yourname).
-	onMount(() => {
-		const u = new URLSearchParams(window.location.search).get('u');
-		if (u) username = u;
-	});
+	// Static/mock auth — links straight to the dashboard.
 	let email = $state('');
 	let password = $state('');
 	let showPassword = $state(false);
 
-	let usernameValid = $derived(/^[a-z0-9_]{3,}$/i.test(username.trim()));
-
-	function next(e) {
+	function handleSubmit(e) {
 		e.preventDefault();
-		if (usernameValid) step = 2;
-	}
-	function submit(e) {
-		e.preventDefault();
+		// mock — would authenticate then redirect
 		window.location.href = '/dashboard';
 	}
 </script>
 
 <svelte:head>
-	<title>Create your page — Buy Me Zobo</title>
+	<title>Log in — Buy Me Zobo</title>
 </svelte:head>
 
 <div class="auth">
@@ -39,23 +24,23 @@
 
 		<div class="brand-mid">
 			<span class="brand-mark" aria-hidden="true"></span>
-			<h2>Start getting paid for your work.</h2>
-			<p>
-				Join thousands of Nigerian creators turning their audience into same-day income — in Naira.
-			</p>
+			<h2>Welcome back.</h2>
+			<p>Your supporters have been busy. Log in to see who sent love while you were away.</p>
 
-			<ul class="brand-checks">
-				{#each ['Free to create your page', 'Live in under a minute', 'Withdraw to any Nigerian bank'] as c}
-					<li><span class="check-dot"><Check size={12} strokeWidth={3} /></span> {c}</li>
-				{/each}
-			</ul>
+			<div class="brand-stat-card">
+				<span class="bsc-dot"></span>
+				<div>
+					<strong>₦18,000</strong>
+					<span>received since your last login</span>
+				</div>
+			</div>
 		</div>
 
 		<div class="brand-avatars">
 			{#each [['TA', '#7a1633'], ['ZK', '#c98f3a'], ['EM', '#4a0d1f'], ['AI', '#971b3d']] as [initials, bg]}
 				<span class="brand-avatar" style="background: {bg}">{initials}</span>
 			{/each}
-			<span class="brand-avatars-label">Loved by creators nationwide</span>
+			<span class="brand-avatars-label">3,200+ creators paid this month</span>
 		</div>
 	</aside>
 
@@ -66,121 +51,81 @@
 				<span class="brand-mark" aria-hidden="true"></span>
 				<span>Buy Me Zobo</span>
 			</a>
-			<a href="/login" class="auth-switch">Log in</a>
+			<a href="/signup" class="auth-switch">Sign up</a>
 		</div>
 
 		<div class="auth-form-wrap">
-			<!-- progress -->
-			<div class="progress">
-				<span class="progress-step" class:done={step >= 1} class:active={step === 1}>1</span>
-				<span class="progress-line" class:filled={step >= 2}></span>
-				<span class="progress-step" class:done={step >= 2} class:active={step === 2}>2</span>
+			<div class="auth-form-head">
+				<h1>Log in to your page</h1>
+				<p>Enter your details to reach your dashboard.</p>
 			</div>
 
-			{#if step === 1}
-				<div class="auth-form-head">
-					<h1>Claim your link</h1>
-					<p>This is where fans will find you.</p>
-				</div>
+			<div class="oauth-list">
+				<a href="/dashboard" class="oauth-btn">
+					<span class="oauth-icon" style="background:#fff; color:#4285F4; border:1px solid #eee;"
+						>G</span
+					>
+					Continue with Google
+				</a>
+				<a href="/dashboard" class="oauth-btn">
+					<span class="oauth-icon" style="background:#111; color:#fff;">A</span>
+					Continue with Apple
+				</a>
+			</div>
 
-				<form class="auth-form" onsubmit={next}>
-					<label class="field">
-						<span class="field-label">Your page address</span>
-						<span class="field-input url" class:valid={usernameValid}>
-							<span class="url-prefix">buymezobo.com/</span>
-							<input
-								type="text"
-								bind:value={username}
-								placeholder="yourname"
-								autocomplete="off"
-								spellcheck="false"
-							/>
-							{#if usernameValid}<Check size={17} strokeWidth={2.5} class="url-check" />{/if}
-						</span>
-						<span class="field-hint">Letters, numbers and underscores. At least 3 characters.</span>
-					</label>
+			<div class="divider"><span>or</span></div>
 
-					<button type="submit" class="btn btn-primary btn-full btn-lg" disabled={!usernameValid}>
-						Continue <ArrowRight size={18} strokeWidth={2} />
-					</button>
-				</form>
-			{:else}
-				<div class="auth-form-head">
-					<h1>Create your account</h1>
-					<p>You're claiming <strong>buymezobo.com/{username}</strong></p>
-				</div>
+			<form class="auth-form" onsubmit={handleSubmit}>
+				<label class="field">
+					<span class="field-label">Email</span>
+					<span class="field-input">
+						<Mail size={17} strokeWidth={1.75} />
+						<input
+							type="email"
+							bind:value={email}
+							placeholder="you@example.com"
+							autocomplete="email"
+							required
+						/>
+					</span>
+				</label>
 
-				<div class="oauth-list">
-					<a href="/dashboard" class="oauth-btn">
-						<span class="oauth-icon" style="background:#fff; color:#4285F4; border:1px solid #eee;"
-							>G</span
+				<label class="field">
+					<span class="field-label">Password</span>
+					<span class="field-input">
+						<Lock size={17} strokeWidth={1.75} />
+						<input
+							type={showPassword ? 'text' : 'password'}
+							bind:value={password}
+							placeholder="••••••••"
+							autocomplete="current-password"
+							required
+						/>
+						<button
+							type="button"
+							class="field-eye"
+							aria-label="Toggle password"
+							onclick={() => (showPassword = !showPassword)}
 						>
-						Continue with Google
-					</a>
-					<a href="/dashboard" class="oauth-btn">
-						<span class="oauth-icon" style="background:#111; color:#fff;">A</span>
-						Continue with Apple
-					</a>
+							{#if showPassword}<EyeOff size={17} strokeWidth={1.75} />{:else}<Eye
+									size={17}
+									strokeWidth={1.75}
+								/>{/if}
+						</button>
+					</span>
+				</label>
+
+				<div class="field-row">
+					<label class="remember"><input type="checkbox" /> Remember me</label>
+					<button type="button" class="forgot">Forgot password?</button>
 				</div>
 
-				<div class="divider"><span>or</span></div>
+				<button type="submit" class="btn btn-primary btn-full btn-lg">
+					Log in <ArrowRight size={18} strokeWidth={2} />
+				</button>
+			</form>
 
-				<form class="auth-form" onsubmit={submit}>
-					<label class="field">
-						<span class="field-label">Email</span>
-						<span class="field-input">
-							<Mail size={17} strokeWidth={1.75} />
-							<input
-								type="email"
-								bind:value={email}
-								placeholder="you@example.com"
-								autocomplete="email"
-								required
-							/>
-						</span>
-					</label>
-					<label class="field">
-						<span class="field-label">Password</span>
-						<span class="field-input">
-							<Lock size={17} strokeWidth={1.75} />
-							<input
-								type={showPassword ? 'text' : 'password'}
-								bind:value={password}
-								placeholder="Create a password"
-								autocomplete="new-password"
-								required
-							/>
-							<button
-								type="button"
-								class="field-eye"
-								aria-label="Toggle password"
-								onclick={() => (showPassword = !showPassword)}
-							>
-								{#if showPassword}<EyeOff size={17} strokeWidth={1.75} />{:else}<Eye
-										size={17}
-										strokeWidth={1.75}
-									/>{/if}
-							</button>
-						</span>
-					</label>
-
-					<button type="submit" class="btn btn-primary btn-full btn-lg">
-						Create my page <ArrowRight size={18} strokeWidth={2} />
-					</button>
-
-					<button type="button" class="back-step" onclick={() => (step = 1)}>
-						<ArrowLeft size={15} strokeWidth={2} /> Back
-					</button>
-				</form>
-			{/if}
-
-			<p class="auth-terms">
-				By continuing you agree to our <span class="auth-terms-static" title="Coming soon"
-					>terms</span
-				>
-				and <span class="auth-terms-static" title="Coming soon">privacy policy</span>.
-			</p>
-			<p class="auth-alt">Already have a page? <a href="/login">Log in</a></p>
+			<p class="auth-alt">New to Buy Me Zobo? <a href="/signup">Create your page</a></p>
 		</div>
 	</main>
 </div>
@@ -248,7 +193,7 @@
 		color: var(--cream);
 	}
 	.brand-mid {
-		max-width: 360px;
+		max-width: 340px;
 	}
 	.brand-mark {
 		display: block;
@@ -261,7 +206,6 @@
 	.brand-mid h2 {
 		font-size: 2rem;
 		margin-bottom: 0.75rem;
-		line-height: 1.15;
 	}
 	.brand-mid p {
 		color: rgba(251, 243, 231, 0.75);
@@ -269,31 +213,29 @@
 		font-size: 1rem;
 		margin: 0 0 1.75rem;
 	}
-	.brand-checks {
-		list-style: none;
-		margin: 0;
-		padding: 0;
+	.brand-stat-card {
 		display: flex;
-		flex-direction: column;
+		align-items: center;
 		gap: 0.85rem;
+		background: rgba(251, 243, 231, 0.06);
+		border: 1px solid rgba(251, 243, 231, 0.12);
+		border-radius: 14px;
+		padding: 1rem 1.15rem;
 	}
-	.brand-checks li {
-		display: flex;
-		align-items: center;
-		gap: 0.7rem;
-		font-size: 0.95rem;
-		font-weight: 500;
-	}
-	.check-dot {
-		width: 20px;
-		height: 20px;
+	.bsc-dot {
+		width: 10px;
+		height: 10px;
 		border-radius: 50%;
-		background: rgba(224, 181, 101, 0.2);
-		color: var(--gold-light);
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		background: var(--gold-light);
 		flex-shrink: 0;
+	}
+	.brand-stat-card strong {
+		display: block;
+		font-size: 1.2rem;
+	}
+	.brand-stat-card span {
+		font-size: 0.82rem;
+		color: rgba(251, 243, 231, 0.7);
 	}
 	.brand-avatars {
 		display: flex;
@@ -366,48 +308,8 @@
 		margin: 0 auto;
 		padding: 2rem 0;
 	}
-
-	.progress {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 1.75rem;
-	}
-	.progress-step {
-		width: 28px;
-		height: 28px;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.82rem;
-		font-weight: 700;
-		background: rgba(92, 16, 41, 0.1);
-		color: var(--zobo-800);
-		transition:
-			background 0.2s ease,
-			color 0.2s ease;
-	}
-	.progress-step.active {
-		background: var(--zobo-800);
-		color: var(--cream);
-	}
-	.progress-step.done:not(.active) {
-		background: var(--zobo-800);
-		color: var(--cream);
-	}
-	.progress-line {
-		width: 40px;
-		height: 2px;
-		background: rgba(92, 16, 41, 0.15);
-		transition: background 0.2s ease;
-	}
-	.progress-line.filled {
-		background: var(--zobo-800);
-	}
-
 	.auth-form-head {
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.75rem;
 	}
 	.auth-form-head h1 {
 		font-size: 1.75rem;
@@ -418,9 +320,6 @@
 		margin: 0;
 		color: #6b5049;
 		font-size: 0.95rem;
-	}
-	.auth-form-head strong {
-		color: var(--zobo-800);
 	}
 
 	.oauth-list {
@@ -501,8 +400,7 @@
 		color: #9a7a6f;
 		transition: border-color 0.15s ease;
 	}
-	.field-input:focus-within,
-	.field-input.valid {
+	.field-input:focus-within {
 		border-color: var(--zobo-700);
 	}
 	.field-input input {
@@ -515,22 +413,6 @@
 		color: var(--ink);
 		min-width: 0;
 	}
-	.field-input.url {
-		gap: 0;
-	}
-	.url-prefix {
-		color: #9a7a6f;
-		font-size: 0.95rem;
-		white-space: nowrap;
-	}
-	.field-input :global(.url-check) {
-		color: #2e9e5b;
-		flex-shrink: 0;
-	}
-	.field-hint {
-		font-size: 0.78rem;
-		color: #9a7a6f;
-	}
 	.field-eye {
 		background: none;
 		border: none;
@@ -541,6 +423,35 @@
 	}
 	.field-eye:hover {
 		color: var(--zobo-700);
+	}
+
+	.field-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 0.85rem;
+	}
+	.remember {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: #6b5049;
+		cursor: pointer;
+	}
+	.remember input {
+		accent-color: var(--zobo-800);
+	}
+	.forgot {
+		background: none;
+		border: none;
+		padding: 0;
+		font-family: inherit;
+		color: var(--zobo-800);
+		font-weight: 500;
+		cursor: pointer;
+	}
+	.forgot:hover {
+		color: var(--zobo-600);
 	}
 
 	.btn {
@@ -567,11 +478,6 @@
 		background: var(--zobo-700);
 		transform: translateY(-1px);
 	}
-	.btn-primary:disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
-		transform: none;
-	}
 	.btn-lg {
 		padding: 0.9rem 1.7rem;
 		font-size: 1rem;
@@ -580,39 +486,9 @@
 		width: 100%;
 	}
 
-	.back-step {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.4rem;
-		background: none;
-		border: none;
-		cursor: pointer;
-		font-family: inherit;
-		font-size: 0.9rem;
-		font-weight: 500;
-		color: #6b5049;
-		padding: 0.3rem;
-	}
-	.back-step:hover {
-		color: var(--zobo-800);
-	}
-
-	.auth-terms {
-		text-align: center;
-		margin: 1.5rem 0 0;
-		font-size: 0.8rem;
-		color: #9a7a6f;
-		line-height: 1.5;
-	}
-	.auth-terms-static {
-		text-decoration: underline;
-		text-decoration-style: dotted;
-		color: #7a5a4f;
-	}
 	.auth-alt {
 		text-align: center;
-		margin: 0.75rem 0 0;
+		margin: 1.5rem 0 0;
 		font-size: 0.9rem;
 		color: #6b5049;
 	}

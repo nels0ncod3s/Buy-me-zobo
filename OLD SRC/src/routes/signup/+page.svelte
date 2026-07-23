@@ -1,17 +1,9 @@
 <script>
-	import { onMount } from 'svelte';
 	import { Check, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from '@lucide/svelte';
 
 	// Static/mock two-step signup — ends at the dashboard.
 	let step = $state(1);
 	let username = $state('');
-
-	// Prefill the handle when the visitor already typed one on the landing page
-	// (e.g. arriving via /signup?u=yourname).
-	onMount(() => {
-		const u = new URLSearchParams(window.location.search).get('u');
-		if (u) username = u;
-	});
 	let email = $state('');
 	let password = $state('');
 	let showPassword = $state(false);

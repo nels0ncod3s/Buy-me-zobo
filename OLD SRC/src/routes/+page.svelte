@@ -20,24 +20,11 @@
 
 	let mobileNavOpen = $state(false);
 
-	// Lock background scrolling while the full-screen mobile menu is open, so the
-	// page underneath doesn't scroll behind the overlay.
-	$effect(() => {
-		if (typeof document === 'undefined') return;
-		document.body.style.overflow = mobileNavOpen ? 'hidden' : '';
-		return () => {
-			document.body.style.overflow = '';
-		};
-	});
-
 	// --- Hero claim-link form ---
 	let claimUsername = $state('');
 	function claimLink(e) {
 		e.preventDefault();
-		const u = claimUsername.trim();
-		// Carry whatever the visitor typed straight into signup so they don't
-		// have to retype their handle on the next screen.
-		window.location.href = u ? `/signup?u=${encodeURIComponent(u)}` : '/signup';
+		window.location.href = '/signup';
 	}
 
 	// --- Animated hero stat counters ---
@@ -271,12 +258,6 @@
 		content="Buy Me Zobo lets your fans support you with a tap — card, transfer or USSD — and it lands in your bank the same day."
 	/>
 </svelte:head>
-
-<svelte:window
-	onkeydown={(e) => {
-		if (e.key === 'Escape' && mobileNavOpen) mobileNavOpen = false;
-	}}
-/>
 
 <div class="page">
 	<!-- ============ NAV ============ -->
