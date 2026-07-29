@@ -137,6 +137,11 @@
 	}
 }
 
+::selection {
+	background: #7a1633;
+	color: #fbf3e7;
+}
+
 /* Scrolling stays fully functional on mobile — this just hides the visible
    scrollbar track/thumb so scrollable panels (the dashboard body, the
    mobile sidebar drawer, etc.) don't show chrome scrollbars on small

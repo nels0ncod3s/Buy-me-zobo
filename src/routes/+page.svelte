@@ -1,6 +1,8 @@
 <script>
 	import { onMount } from 'svelte';
 	import { reveal } from '$lib/reveal.js';
+	import { magnetic } from '$lib/magnetic.js';
+	import { tilt } from '$lib/tilt.js';
 	import {
 		ArrowRight,
 		ArrowUpRight,
@@ -231,6 +233,61 @@
 		}
 	];
 
+	// --- Ambient cursor accent (desktop pointer only, motion-safe) ---
+	let cursorReady = $state(false);
+	let cursorHover = $state(false);
+	let cursorRingEl;
+
+	onMount(() => {
+		const fine = window.matchMedia('(pointer: fine)').matches;
+		const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		if (!fine || reduce) return;
+
+		cursorReady = true;
+		let mx = window.innerWidth / 2;
+		let my = window.innerHeight / 2;
+		let rx = mx;
+		let ry = my;
+		let raf;
+
+		function onMove(e) {
+			mx = e.clientX;
+			my = e.clientY;
+		}
+		function onOver(e) {
+			if (e.target.closest('a, button, input, summary, .demo-chip, .support-tier')) {
+				cursorHover = true;
+			}
+		}
+		function onOut(e) {
+			if (e.target.closest('a, button, input, summary, .demo-chip, .support-tier')) {
+				cursorHover = false;
+			}
+		}
+		function loop() {
+			// Lerp toward the pointer so the ring trails slightly instead of
+			// snapping — the classic soft-follow cursor accent.
+			rx += (mx - rx) * 0.18;
+			ry += (my - ry) * 0.18;
+			if (cursorRingEl) {
+				cursorRingEl.style.transform = `translate(${rx}px, ${ry}px) translate(-50%, -50%)`;
+			}
+			raf = requestAnimationFrame(loop);
+		}
+
+		window.addEventListener('mousemove', onMove, { passive: true });
+		window.addEventListener('mouseover', onOver);
+		window.addEventListener('mouseout', onOut);
+		raf = requestAnimationFrame(loop);
+
+		return () => {
+			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mouseover', onOver);
+			window.removeEventListener('mouseout', onOut);
+			cancelAnimationFrame(raf);
+		};
+	});
+
 	const faqs = [
 		{
 			q: 'How fast do I actually get paid?',
@@ -302,7 +359,7 @@
 			<div class="nav-right">
 				<div class="nav-actions">
 					<a href="/login" class="nav-login">Log in</a>
-					<a href="/signup" class="btn btn-primary">Start my page</a>
+					<a href="/signup" class="btn btn-primary" use:magnetic>Start my page</a>
 				</div>
 
 				<button
@@ -368,7 +425,7 @@
 							spellcheck="false"
 						/>
 					</div>
-					<button type="submit" class="hero-claim-btn">
+					<button type="submit" class="hero-claim-btn" use:magnetic={{ max: 10 }}>
 						Claim your link <ArrowRight size={16} strokeWidth={2.25} />
 					</button>
 				</form>
@@ -391,7 +448,7 @@
 
 			<!-- Interactive "try it" card -->
 			<div class="hero-visual" use:reveal={{ delay: 180, y: 28 }}>
-				<div class="feed-card">
+				<div class="feed-card" use:tilt>
 					<div class="feed-head">
 						<span class="feed-dot"></span>
 						Try sending a test Zobo
@@ -472,7 +529,7 @@
 				</p>
 			</div>
 
-			<div class="support-card" use:reveal={{ delay: 120 }}>
+			<div class="support-card" use:reveal={{ delay: 120 }} use:tilt={{ max: 4 }}>
 				<h3>
 					Show Nelson some love
 					<span class="support-cup-sm" style="--fill: {cupFillPct}%" aria-hidden="true">
@@ -505,7 +562,7 @@
 						<span>₦{supportTotal.toLocaleString('en-NG')}</span>
 					</div>
 				</div>
-				<a href="/signup" class="btn btn-primary btn-full btn-lg support-cta">
+				<a href="/signup" class="btn btn-primary btn-full btn-lg support-cta" use:magnetic={{ max: 8 }}>
 					Support ₦{supportTotal.toLocaleString('en-NG')}
 				</a>
 			</div>
@@ -629,7 +686,7 @@
 						— that's it. Compare that to losing 10–15% to currency conversion and international fees
 						on platforms built for somewhere else.
 					</p>
-					<a href="/signup" class="btn btn-primary btn-lg">
+					<a href="/signup" class="btn btn-primary btn-lg" use:magnetic>
 						Create your free page <ArrowRight size={18} strokeWidth={2} />
 					</a>
 				</div>
@@ -669,7 +726,7 @@
 		<div class="final-inner" use:reveal>
 			<h2>Your next post could pay for itself.</h2>
 			<p>Set up your page in under a minute and share it today.</p>
-			<a href="/signup" class="btn btn-cream btn-lg">
+			<a href="/signup" class="btn btn-cream btn-lg" use:magnetic>
 				Start my page <ArrowUpRight size={18} strokeWidth={2} />
 			</a>
 		</div>
@@ -743,6 +800,15 @@
 			</div>
 		</div>
 	</footer>
+
+	{#if cursorReady}
+		<div
+			class="cursor-ring"
+			class:hover={cursorHover}
+			bind:this={cursorRingEl}
+			aria-hidden="true"
+		></div>
+	{/if}
 </div>
 
 <style>
@@ -766,12 +832,53 @@
 	}
 
 	.page {
+		position: relative;
 		font-family: 'Geist Variable', ui-sans-serif, system-ui, 'Segoe UI', Roboto, sans-serif;
 		background: var(--cream);
 		color: var(--ink);
 		/* clip (not hidden) so this doesn't implicitly turn overflow-y into
 		   'auto' and break position:sticky for the nav / pinned steps section */
 		overflow-x: clip;
+	}
+	/* A faint film grain over the whole page — flat color blocks read as
+	   printed/tactile instead of a plain digital gradient. Static (no
+	   animation cost) and non-interactive. */
+	.page::before {
+		content: '';
+		position: fixed;
+		inset: 0;
+		z-index: 990;
+		pointer-events: none;
+		opacity: 0.035;
+		mix-blend-mode: overlay;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	}
+	/* Ambient cursor accent: a soft-follow ring that inverts against
+	   whatever's underneath, so it reads on both the cream and dark
+	   sections without per-section theming. */
+	.cursor-ring {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		border: 1.5px solid #fff;
+		pointer-events: none;
+		z-index: 1000;
+		mix-blend-mode: difference;
+		transition:
+			width 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+			height 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	.cursor-ring.hover {
+		width: 50px;
+		height: 50px;
+	}
+	@media (pointer: coarse) {
+		.cursor-ring {
+			display: none;
+		}
 	}
 	* {
 		box-sizing: border-box;
@@ -795,8 +902,10 @@
 		margin: 0 auto;
 		padding: 0 1.5rem;
 	}
+	/* More generous vertical rhythm between sections — negative space is
+	   most of what separates a "designed" page from a merely styled one. */
 	.section {
-		padding: clamp(4rem, 9vw, 7rem) 0;
+		padding: clamp(5rem, 10vw, 8.5rem) 0;
 	}
 
 	.eyebrow {
@@ -813,11 +922,12 @@
 	}
 	.section-head {
 		max-width: 640px;
-		margin: 0 auto clamp(2.5rem, 5vw, 3.5rem);
+		margin: 0 auto clamp(3rem, 6vw, 4.5rem);
 		text-align: center;
 	}
 	.section-head h2 {
-		font-size: clamp(1.7rem, 3.6vw, 2.5rem);
+		font-size: clamp(2rem, 4.4vw, 3.2rem);
+		letter-spacing: -0.03em;
 	}
 
 	/* ============ BUTTONS ============ */
@@ -1002,7 +1112,9 @@
 		margin-bottom: 1.2rem;
 	}
 	.hero h1 {
-		font-size: clamp(2.3rem, 5.2vw, 3.6rem);
+		font-size: clamp(2.75rem, 6.4vw, 5.4rem);
+		line-height: 1.02;
+		letter-spacing: -0.035em;
 		color: var(--zobo-950);
 	}
 	.hero-sub {
@@ -1330,7 +1442,8 @@
 		min-width: 0;
 	}
 	.support-copy h2 {
-		font-size: clamp(1.9rem, 3.6vw, 2.6rem);
+		font-size: clamp(2.1rem, 4vw, 3rem);
+		letter-spacing: -0.03em;
 		color: var(--zobo-950);
 		margin: 1.25rem 0 1rem;
 	}
@@ -1611,7 +1724,8 @@
 		box-shadow: 0 8px 18px -8px rgba(92, 16, 41, 0.6);
 	}
 	.how-step h3 {
-		font-size: 1.35rem;
+		font-size: clamp(1.6rem, 3vw, 2.1rem);
+		letter-spacing: -0.03em;
 		margin-bottom: 0.6rem;
 		color: var(--zobo-950);
 	}
@@ -1756,7 +1870,8 @@
 	}
 	.pricing-left h2 {
 		color: var(--cream);
-		font-size: clamp(1.6rem, 3vw, 2.2rem);
+		font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+		letter-spacing: -0.03em;
 		margin-bottom: 1rem;
 	}
 	.pricing-left p {
@@ -1866,7 +1981,8 @@
 	}
 	.final h2 {
 		color: var(--cream);
-		font-size: clamp(1.9rem, 4vw, 2.8rem);
+		font-size: clamp(2.2rem, 5vw, 3.6rem);
+		letter-spacing: -0.035em;
 		margin-bottom: 0.75rem;
 	}
 	.final p {
@@ -2173,6 +2289,9 @@
 		}
 		.feed-row {
 			opacity: 1;
+		}
+		.cursor-ring {
+			display: none;
 		}
 	}
 </style>
