@@ -1084,17 +1084,25 @@
 	/* ============ HERO ============ */
 	.hero {
 		position: relative;
+		/* Fills the space under the sticky nav (measured ~75px/4.7rem) and
+		   centers its content in it, so the whole hero lands within one
+		   screen on a typical laptop viewport instead of pushing the fold
+		   down. Rounded up slightly to clear the nav with a hair of margin. */
+		min-height: calc(100svh - 4.8rem);
+		display: flex;
+		align-items: center;
 		background:
 			radial-gradient(70% 60% at 82% 0%, rgba(151, 27, 61, 0.12), transparent 70%),
 			radial-gradient(50% 50% at 0% 100%, rgba(201, 143, 58, 0.1), transparent 70%), var(--cream);
 	}
 	.hero-inner {
 		max-width: 1200px;
+		width: 100%;
 		margin: 0 auto;
-		padding: clamp(1.25rem, 3vw, 2.25rem) 1.5rem clamp(3.5rem, 8vw, 6rem);
+		padding: clamp(0.75rem, 2vw, 1.25rem) 1.5rem clamp(1.5rem, 3vw, 2.25rem);
 		display: grid;
 		grid-template-columns: 1.05fr 0.95fr;
-		gap: clamp(2rem, 5vw, 4rem);
+		gap: clamp(1.5rem, 4vw, 3rem);
 		align-items: center;
 	}
 	.hero-copy,
@@ -1105,24 +1113,24 @@
 		display: inline-block;
 		background: rgba(92, 16, 41, 0.08);
 		color: var(--zobo-800);
-		font-size: 0.82rem;
+		font-size: 0.8rem;
 		font-weight: 600;
-		padding: 0.4rem 0.9rem;
+		padding: 0.35rem 0.85rem;
 		border-radius: 999px;
-		margin-bottom: 1.2rem;
+		margin-bottom: 0.85rem;
 	}
 	.hero h1 {
-		font-size: clamp(2.75rem, 6.4vw, 5.4rem);
-		line-height: 1.02;
-		letter-spacing: -0.035em;
+		font-size: clamp(2.1rem, 4.2vw, 3.4rem);
+		line-height: 1.06;
+		letter-spacing: -0.03em;
 		color: var(--zobo-950);
 	}
 	.hero-sub {
-		font-size: clamp(1rem, 1.4vw, 1.12rem);
-		line-height: 1.6;
+		font-size: clamp(0.94rem, 1.15vw, 1.02rem);
+		line-height: 1.55;
 		color: #5a4038;
-		max-width: 520px;
-		margin: 1.35rem 0 2rem;
+		max-width: 480px;
+		margin: 1rem 0 1.35rem;
 	}
 	.hero-claim {
 		display: flex;
@@ -1186,8 +1194,8 @@
 	}
 	.hero-stats {
 		display: flex;
-		gap: clamp(1.25rem, 4vw, 2.5rem);
-		margin-top: 2.5rem;
+		gap: clamp(1.1rem, 3.5vw, 2.2rem);
+		margin-top: 1.5rem;
 		flex-wrap: wrap;
 	}
 	.stat {
@@ -1195,7 +1203,7 @@
 		flex-direction: column;
 	}
 	.stat-num {
-		font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+		font-size: clamp(1.25rem, 2.2vw, 1.6rem);
 		font-weight: 700;
 		color: var(--zobo-800);
 		letter-spacing: -0.02em;
@@ -1213,7 +1221,7 @@
 	}
 	.feed-card {
 		width: 100%;
-		max-width: 380px;
+		max-width: 360px;
 		background: #fffdf9;
 		border: 1px solid rgba(92, 16, 41, 0.12);
 		border-radius: 22px;
@@ -1253,10 +1261,10 @@
 		}
 	}
 	.demo-controls {
-		padding: 0.9rem 1.25rem 0.7rem;
+		padding: 0.7rem 1.25rem 0.55rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.6rem;
+		gap: 0.5rem;
 		border-bottom: 1px solid rgba(92, 16, 41, 0.08);
 	}
 	.demo-amounts {
@@ -1324,8 +1332,12 @@
 	}
 	.feed-list {
 		padding: 0.5rem;
-		max-height: 232px;
+		max-height: 190px;
 		overflow: hidden;
+		/* Fade the clipped last row instead of cutting it off hard — reads as
+		   "there's more" rather than a layout bug. */
+		mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+		-webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
 	}
 	.feed-row {
 		display: flex;
