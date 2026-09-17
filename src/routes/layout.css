@@ -1601,3 +1601,53 @@ fieldset.field legend {
 		line-height: 1.3;
 	}
 }
+/* Keep the decorative cards inside the artwork on narrow screens. */
+.gift-note,
+.creator-note {
+	max-width: calc(100% - 16px);
+}
+.gift-note > div,
+.creator-note > div {
+	min-width: 0;
+}
+.gift-note div > span,
+.creator-note strong {
+	overflow-wrap: anywhere;
+}
+.mini-profile .eyebrow {
+	font-size: 10px;
+	letter-spacing: 0.06em;
+}
+.hero-art .cup-caption,
+.hero-art .art-demo-label {
+	font-size: 9px;
+}
+@media (max-width: 760px) {
+	.gift-note {
+		left: 8px;
+	}
+	.creator-note {
+		right: 8px;
+	}
+	.gift-note strong,
+	.gift-note div > span,
+	.creator-note strong {
+		font-size: 12px;
+	}
+	.hero-art .art-note {
+		left: 25px;
+	}
+	.hero-art .creator-note div > span {
+		font-size: 9px;
+	}
+	.mini-profile {
+		flex-wrap: wrap;
+	}
+	.mini-profile > div {
+		flex: 1;
+		min-width: 150px;
+	}
+	.mini-profile .mini-cup {
+		display: none;
+	}
+}
