@@ -1,105 +1,108 @@
 <script>
-	import { Heart } from '@lucide/svelte';
+	import { creator, naira, creatorPath } from '$lib/demo.js';
+	import ZoboCup from '$lib/components/ZoboCup.svelte';
+	import { ArrowUpRight, Search } from '@lucide/svelte';
+	let search = $state('');
+	let filtered = $derived(
+		$creator.gifts.filter((gift) =>
+			`${gift.name} ${gift.note}`.toLowerCase().includes(search.toLowerCase())
+		)
+	);
 </script>
 
-<svelte:head>
-	<title>Supporters — Buy Me Zobo</title>
-</svelte:head>
-
-<div class="dash">
-	<div class="dash-welcome">
-		<h2>Supporters</h2>
-		<p>Everyone who's sent you a Zobo will show up here.</p>
-	</div>
-
-	<section class="card">
-		<div class="empty-state">
-			<span class="empty-icon"><Heart size={22} strokeWidth={1.8} /></span>
-			<h4>No supporters yet</h4>
-			<p>
-				Once someone sends you a Zobo, they'll show up here with their name, message, and how much
-				they sent.
-			</p>
-			<a href="/dashboard" class="btn-share">Share your page</a>
-		</div>
-	</section>
+<div class="page-heading">
+	<span class="eyebrow">THE PEOPLE ROOTING FOR YOU</span>
+	<h2>Little gifts. Good people.</h2>
+	<p>Every bit of encouragement, all in one place.</p>
 </div>
+<section class="panel">
+	<div class="row">
+		<h3 class="section-title">
+			Your test gifts <span class="badge">{$creator.gifts.length}</span>
+		</h3>
+		{#if $creator.gifts.length}<label class="search-box"
+				><Search size={15} /><input
+					aria-label="Search supporters and messages"
+					placeholder="Find a name or a kind word"
+					bind:value={search}
+				/></label
+			>{/if}
+	</div>
+	{#if $creator.gifts.length}<div class="supporter-list">
+			{#each filtered as gift}<article>
+					<span class="avatar">{gift.name[0].toUpperCase()}</span>
+					<div>
+						<strong>{gift.name}</strong><span
+							>{new Date(gift.date).toLocaleDateString('en-NG')} · Test gift</span
+						>
+						<p>{gift.note || 'A little kindness, no words needed.'}</p>
+					</div>
+					<strong>{naira(gift.amount)}</strong>
+				</article>{/each}{#if !filtered.length}<div class="empty">
+					<h3>No matching kind words.</h3>
+					<p>Try another name or clear your search.</p>
+					<button class="button secondary small" onclick={() => (search = '')}>Clear search</button>
+				</div>{/if}
+		</div>{:else}<div class="empty">
+			<ZoboCup class="empty-cup" />
+			<h3>Your people will find you.</h3>
+			<p>Try sending a gift on your demo page. The name, message, and amount will appear here.</p>
+			<a
+				class="button secondary small"
+				href={$creator.username ? creatorPath($creator.username) : '/signup'}
+				>{$creator.username ? 'Open your demo page' : 'Create your demo page'}
+				<ArrowUpRight size={15} /></a
+			>
+		</div>{/if}
+</section>
 
 <style>
-	.dash {
+	.search-box {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		padding: 8px 12px;
+		max-width: 100%;
+		font-size: 14px;
+		color: var(--muted);
+	}
+	.search-box input {
+		background: transparent;
+		border: 0;
+		min-width: 0;
+		outline: 0;
+		width: 190px;
+	}
+	.supporter-list article {
+		display: flex;
+		align-items: flex-start;
+		gap: 15px;
+		padding: 24px 0;
+		border-bottom: 1px solid var(--line);
+	}
+	.supporter-list article:last-child {
+		border: 0;
+	}
+	.supporter-list article > div {
 		flex: 1;
 		min-width: 0;
-		width: 100%;
-		padding: 1.75rem clamp(1.25rem, 3vw, 2.25rem) 2.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
 	}
-	.dash-welcome h2 {
-		font-size: 1.5rem;
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		color: var(--zobo-950);
-		margin: 0 0 0.3rem;
+	.supporter-list strong {
+		font-size: 14px;
 	}
-	.dash-welcome p {
-		font-size: 0.9rem;
+	.supporter-list article > div > span {
+		display: block;
+		font-size: 14px;
 		color: var(--muted);
-		margin: 0;
+		margin: 4px 0 10px;
 	}
-
-	.card {
-		background: var(--sheet);
-		border: 1px solid var(--line);
-		border-radius: 14px;
+	.supporter-list p {
+		font-size: 14px;
+		overflow-wrap: anywhere;
 	}
-
-	.empty-state {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		gap: 0.6rem;
-		padding: 3.5rem 1.5rem;
-	}
-	.empty-icon {
-		width: 52px;
-		height: 52px;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--canvas);
-		color: var(--muted-2);
-		margin-bottom: 0.3rem;
-	}
-	.empty-state h4 {
-		font-size: 1rem;
-		font-weight: 700;
-		color: var(--ink);
-		margin: 0;
-	}
-	.empty-state p {
-		font-size: 0.85rem;
-		line-height: 1.5;
-		color: var(--muted);
-		margin: 0;
-		max-width: 26rem;
-	}
-	.btn-share {
-		margin-top: 0.75rem;
-		display: inline-flex;
-		align-items: center;
-		font-family: inherit;
-		font-weight: 600;
-		font-size: 0.85rem;
-		padding: 0.6rem 1.25rem;
-		border-radius: 999px;
-		background: var(--zobo-800);
-		color: var(--cream);
-		transition: background 0.15s ease;
-	}
-	.btn-share:hover {
-		background: var(--zobo-700);
+	.supporter-list article > strong {
+		white-space: nowrap;
 	}
 </style>

@@ -1,288 +1,290 @@
 <script>
-	import { Wallet, Heart, Copy, Check, BarChart3 } from '@lucide/svelte';
-
-	// Static/mock — this represents a brand-new creator's first day, before
-	// any support has come in.
-	const pageUrl = 'buymezobo.com/trxpznxl';
-
-	const stats = [
-		{ icon: Wallet, label: 'Earned so far', value: '₦0' },
-		{ icon: Heart, label: 'Supporters', value: '0' }
-	];
-
-	let copied = $state(false);
-	async function copyLink() {
-		try {
-			await navigator.clipboard.writeText(`https://${pageUrl}`);
-			copied = true;
-			setTimeout(() => (copied = false), 1800);
-		} catch {
-			// Clipboard API unavailable — nothing to fall back to in a mock.
+	import { ArrowUpRight, Copy, Heart, Wallet, Check, Sparkles } from '@lucide/svelte';
+	import { creator, creatorPath, copyPage, naira } from '$lib/demo.js';
+	import ActionButton from '$lib/components/ActionButton.svelte';
+	import ZoboCup from '$lib/components/ZoboCup.svelte';
+	let earned = $derived($creator.gifts.reduce((sum, gift) => sum + gift.amount, 0));
+	let paid = $derived($creator.payouts.reduce((sum, payout) => sum + payout.amount, 0));
+	let checklist = $derived([
+		{
+			label: 'Make your profile feel like you',
+			done: Boolean($creator.displayName && $creator.bio),
+			href: '/dashboard/settings'
+		},
+		{
+			label: 'Add a demo payout destination',
+			done: Boolean($creator.bank),
+			href: '/dashboard/payouts'
+		},
+		{
+			label: 'Preview your creator page',
+			done: Boolean($creator.username),
+			href: $creator.username ? creatorPath($creator.username) : '/signup'
 		}
-	}
+	]);
 </script>
 
-<svelte:head>
-	<title>Home — Buy Me Zobo</title>
-</svelte:head>
-
-<div class="dash">
-	<div class="dash-welcome">
-		<h2>Welcome, Nelson</h2>
-		<p>Your page is live. Share it to start earning.</p>
-	</div>
-
-	<section class="share-card">
-		<div class="share-text">
-			<span class="share-label">Your page</span>
-			<span class="share-url">{pageUrl}</span>
+<div class="page-heading">
+	<span class="eyebrow">YOUR CREATIVE CORNER</span>
+	<h2>
+		{$creator.displayName
+			? `Hello, ${$creator.displayName.split(' ')[0]}.`
+			: 'Make yourself at home.'} <span class="hello-flower">✳</span>
+	</h2>
+	<p>A little space for your work, your people, and the kindness they send.</p>
+</div>
+<section class="share-banner">
+	<div>
+		<span class="eyebrow"
+			>{$creator.active ? 'YOUR NEXT LITTLE BEGINNING' : 'YOUR PAGE IS PAUSED'}</span
+		>
+		<h3>
+			{$creator.username ? 'Good things start with a shared link.' : 'Give your creativity a home.'}
+		</h3>
+		<p>
+			{$creator.username
+				? `/creator/${$creator.username}`
+				: 'Choose your name and make this space yours.'}
+		</p>
+		<div class="share-actions">
+			{#if $creator.username}<ActionButton
+					class="button cream small"
+					action={() => copyPage($creator.username)}
+					success="Your page link is copied."
+					busyLabel="Copying…"><Copy size={14} /> Copy your link</ActionButton
+				><a href={creatorPath($creator.username)} class="text-link"
+					>Preview page <ArrowUpRight size={15} /></a
+				>{:else}<a href="/signup" class="button cream small"
+					>Create a demo page <ArrowUpRight size={15} /></a
+				>{/if}
 		</div>
-		<button type="button" class="share-copy" onclick={copyLink}>
-			{#if copied}
-				<Check size={15} strokeWidth={2.5} /> Copied
-			{:else}
-				<Copy size={15} strokeWidth={2} /> Copy link
-			{/if}
-		</button>
+	</div>
+	<ZoboCup class="banner-cup" />
+</section>
+<div class="metrics">
+	<article class="panel">
+		<span class="metric-label"><Wallet size={15} /> Total test support</span><strong
+			>{naira(earned)}</strong
+		><small>A little fuel for what comes next.</small>
+	</article>
+	<article class="panel">
+		<span class="metric-label"><Heart size={15} /> Test gifts received</span><strong
+			>{$creator.gifts.length}<span> zobos</span></strong
+		><small>Every gift has a story behind it.</small>
+	</article>
+	<article class="panel">
+		<span class="metric-label"><Sparkles size={15} /> Demo balance</span><strong
+			>{naira(earned - paid)}</strong
+		><small>Simulated funds. No real money held.</small>
+	</article>
+</div>
+<div class="overview-grid">
+	<section class="panel">
+		<div class="row">
+			<h3 class="section-title">A little love, lately</h3>
+			<a class="text-link" href="/dashboard/supporters">See all <ArrowUpRight size={14} /></a>
+		</div>
+		{#if $creator.gifts.length}<div class="recent-list">
+				{#each $creator.gifts.slice(0, 4) as gift}<article>
+						<span class="avatar">{gift.name[0].toUpperCase()}</span>
+						<div>
+							<strong>{gift.name}</strong>
+							<p>{gift.note || 'Sent a little kindness your way.'}</p>
+						</div>
+						<strong>{naira(gift.amount)}</strong>
+					</article>{/each}
+			</div>{:else}<div class="empty">
+				<ZoboCup class="empty-cup" />
+				<h3>Your first zobo is out there.</h3>
+				<p>Share your page or try sending a test gift to see your support appear here.</p>
+				<a class="text-link" href={$creator.username ? creatorPath($creator.username) : '/example'}
+					>Try a test gift <ArrowUpRight size={15} /></a
+				>
+			</div>{/if}
 	</section>
-
-	<div class="stat-grid">
-		{#each stats as s}
-			<div class="stat-card">
-				<span class="stat-icon"><s.icon size={17} strokeWidth={1.9} /></span>
-				<span class="stat-value">{s.value}</span>
-				<span class="stat-label">{s.label}</span>
-			</div>
-		{/each}
-	</div>
-
-	<div class="dash-grid">
-		<section class="card">
-			<div class="card-head">
-				<h3>Earnings</h3>
-			</div>
-			<div class="empty-state">
-				<span class="empty-icon"><BarChart3 size={18} strokeWidth={1.8} /></span>
-				<h4>No earnings yet</h4>
-				<p>Your chart will appear here once you get your first Zobo.</p>
-			</div>
-		</section>
-
-		<section class="card">
-			<div class="card-head">
-				<h3>Recent supporters</h3>
-				<a href="/dashboard/supporters" class="card-link">View all</a>
-			</div>
-			<div class="empty-state">
-				<span class="empty-icon"><Heart size={18} strokeWidth={1.8} /></span>
-				<h4>No supporters yet</h4>
-				<p>Share your page to get your first one.</p>
-			</div>
-		</section>
-	</div>
+	<section class="panel">
+		<span class="badge">A GOOD PLACE TO START</span>
+		<h3 class="setup-title">Make it feel like you.</h3>
+		<p class="inline-note">A few little touches before you share your page.</p>
+		<div class="checklist">
+			{#each checklist as item}<a href={item.href}
+					><span class="check-circle" class:done={item.done}
+						>{#if item.done}<Check size={12} />{:else}•{/if}</span
+					>{item.label}<ArrowUpRight size={13} /></a
+				>{/each}
+		</div>
+		<div class="divider"></div>
+		<p class="inline-note">
+			This demo stays on your current browser. A shared link won't transfer your profile to another
+			device.
+		</p>
+	</section>
 </div>
 
 <style>
-	.dash {
-		flex: 1;
-		min-width: 0;
-		width: 100%;
-		padding: 1.75rem clamp(1.25rem, 3vw, 2.25rem) 2.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1.25rem;
+	.hello-flower {
+		color: #b96b85;
+		font-weight: 400;
+		font-size: 25px;
+		margin-left: 8px;
 	}
-
-	.dash-welcome h2 {
-		font-size: 1.5rem;
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		color: var(--zobo-950);
-		margin: 0 0 0.3rem;
-	}
-	.dash-welcome p {
-		font-size: 0.9rem;
-		color: var(--muted);
-		margin: 0;
-	}
-
-	/* ============ SHARE CARD ============ */
-	.share-card {
-		background: linear-gradient(165deg, var(--zobo-900), var(--zobo-950));
+	.share-banner {
+		background: var(--plum);
 		border-radius: 14px;
-		padding: 1.1rem 1.4rem;
+		padding: 32px;
+		color: var(--cream);
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
+		gap: 20px;
+		overflow: hidden;
+	}
+	.share-banner .eyebrow {
+		color: #dda9bc;
+		font-size: 14px;
+	}
+	.share-banner h3 {
+		font-size: 28px;
+		margin: 14px 0;
+		max-width: 350px;
+	}
+	.share-banner p {
+		font-size: 14px;
+		color: #ddbac8;
+	}
+	.share-actions {
+		display: flex;
+		align-items: center;
+		gap: 22px;
+		margin-top: 22px;
 		flex-wrap: wrap;
 	}
-	.share-text {
-		display: flex;
-		flex-direction: column;
-		gap: 0.15rem;
-		min-width: 0;
+	:global(.banner-cup) {
+		width: 120px;
+		transform: rotate(12deg);
+		margin: -10px 10px;
 	}
-	.share-label {
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: rgba(251, 243, 231, 0.55);
-	}
-	.share-url {
-		font-size: 1rem;
-		font-weight: 700;
-		color: var(--cream);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.share-copy {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		font-family: inherit;
-		font-weight: 600;
-		font-size: 0.85rem;
-		padding: 0.55rem 1rem;
-		border-radius: 999px;
-		border: none;
-		background: var(--cream);
-		color: var(--zobo-950);
-		cursor: pointer;
-		flex-shrink: 0;
-		transition: background 0.15s ease;
-	}
-	.share-copy:hover {
-		background: #fff;
-	}
-
-	/* ============ STAT CARDS ============ */
-	.stat-grid {
+	.metrics {
 		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 1rem;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 16px;
+		margin: 23px 0;
 	}
-	.stat-card {
-		background: var(--sheet);
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		padding: 1.1rem 1.2rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-		min-width: 0;
+	.metrics article {
+		padding: 22px;
 	}
-	.stat-icon {
-		width: 32px;
-		height: 32px;
-		border-radius: 9px;
+	.metric-label {
+		font-size: 14px;
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		background: rgba(151, 27, 61, 0.09);
-		color: var(--zobo-700);
-		margin-bottom: 0.3rem;
+		gap: 8px;
+		color: var(--muted);
 	}
-	.stat-value {
-		font-size: 1.35rem;
-		font-weight: 700;
+	.metrics strong {
+		display: block;
+		font-size: 35px;
+		line-height: 1.1;
+		letter-spacing: -0.05em;
+		margin: 17px 0 10px;
+	}
+	.metrics strong > span {
+		font-size: 15px;
+		font-weight: 400;
 		letter-spacing: -0.02em;
-		color: var(--zobo-950);
 	}
-	.stat-label {
-		font-size: 0.78rem;
+	.metrics small {
+		font-size: 14px;
 		color: var(--muted);
 	}
-
-	/* ============ MAIN GRID ============ */
-	.dash-grid {
+	.overview-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1.25rem;
-		align-items: start;
+		grid-template-columns: 1.4fr 1fr;
+		gap: 20px;
 	}
-	.card {
-		background: var(--sheet);
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		padding: 1.4rem 1.5rem;
-		min-width: 0;
+	.setup-title {
+		font-size: 25px;
+		margin: 18px 0 12px;
 	}
-	.card-head {
+	.checklist {
+		margin-top: 25px;
+	}
+	.checklist a > :global(svg) {
+		margin-left: auto;
+	}
+	.recent-list article {
 		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 1rem;
-		margin-bottom: 0.5rem;
+		align-items: center;
+		gap: 12px;
+		padding: 20px 0;
+		border-bottom: 1px solid var(--line);
 	}
-	.card-head h3 {
-		font-size: 1rem;
-		font-weight: 700;
-		color: var(--zobo-950);
-		margin: 0;
+	.recent-list article:last-child {
+		border: 0;
 	}
-	.card-link {
-		font-size: 0.8rem;
-		font-weight: 600;
-		color: var(--zobo-700);
+	.recent-list article div {
+		min-width: 0;
+		flex: 1;
+	}
+	.recent-list strong {
+		font-size: 14px;
+	}
+	.recent-list p {
+		font-size: 14px;
+		overflow-wrap: anywhere;
+	}
+	.recent-list article > strong {
 		white-space: nowrap;
 	}
-	.card-link:hover {
-		color: var(--zobo-600);
-	}
-
-	/* ============ EMPTY STATES ============ */
-	.empty-state {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		text-align: center;
-		gap: 0.5rem;
-		padding: 2rem 1rem;
-	}
-	.empty-icon {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--canvas);
-		color: var(--muted-2);
-		margin-bottom: 0.25rem;
-	}
-	.empty-state h4 {
-		font-size: 0.88rem;
-		font-weight: 600;
-		color: var(--ink);
-		margin: 0;
-	}
-	.empty-state p {
-		font-size: 0.8rem;
-		color: var(--muted);
-		margin: 0;
-		max-width: 22rem;
-	}
-
-	/* ============ MOBILE ============ */
 	@media (max-width: 1000px) {
-		.dash-grid {
+		.metrics {
+			grid-template-columns: 1fr 1fr;
+		}
+		.metrics article:last-child {
+			grid-column: 1/-1;
+		}
+		.overview-grid {
 			grid-template-columns: 1fr;
+		}
+		.metrics strong {
+			font-size: 29px;
 		}
 	}
-	@media (max-width: 480px) {
-		.stat-grid {
-			grid-template-columns: 1fr;
+	@media (max-width: 760px) {
+		.share-banner {
+			padding: 24px;
+			position: relative;
 		}
-		.share-card {
-			flex-direction: column;
-			align-items: stretch;
-			text-align: center;
+		.share-banner h3 {
+			font-size: 24px;
+			max-width: 240px;
 		}
-		.share-copy {
-			justify-content: center;
+		:global(.banner-cup) {
+			width: 85px;
+			margin: 0 -14px 0 0;
+		}
+		.share-banner .eyebrow {
+			font-size: 14px;
+		}
+		.metrics {
+			gap: 10px;
+		}
+		.metrics article {
+			padding: 18px 14px;
+		}
+		.metric-label {
+			font-size: 14px;
+		}
+		.metrics small {
+			font-size: 14px;
+		}
+		.metrics strong {
+			font-size: 28px;
+		}
+		.share-actions {
+			gap: 16px;
+		}
+		.share-actions .text-link {
+			font-size: 14px;
 		}
 	}
 </style>

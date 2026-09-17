@@ -5,493 +5,344 @@
 		Heart,
 		Wallet,
 		Settings,
-		CircleHelp,
-		PanelLeft,
 		Menu,
-		X
+		X,
+		ArrowUpRight,
+		ChevronRight
 	} from '@lucide/svelte';
-
+	import { creator, ready, creatorPath } from '$lib/demo.js';
+	import Brand from '$lib/components/Brand.svelte';
+	import ZoboCup from '$lib/components/ZoboCup.svelte';
 	let { children } = $props();
-
-	let sidebarOpen = $state(false); // mobile drawer
-	let collapsed = $state(false); // web-view collapsed rail
-
-	// Kept deliberately short for an MVP — every item here has a real page behind it.
-	const navGroups = [
-		{
-			heading: 'Overview',
-			items: [{ label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' }]
-		},
-		{
-			heading: 'Earn',
-			items: [
-				{ label: 'Supporters', icon: Heart, href: '/dashboard/supporters' },
-				{ label: 'Payouts', icon: Wallet, href: '/dashboard/payouts' }
-			]
-		},
-		{
-			heading: 'Account',
-			items: [{ label: 'Settings', icon: Settings, href: '/dashboard/settings' }]
-		}
+	let open = $state(false);
+	let closeButton;
+	let menuButton;
+	let drawer;
+	const items = [
+		{ label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+		{ label: 'Supporters', href: '/dashboard/supporters', icon: Heart },
+		{ label: 'Payouts', href: '/dashboard/payouts', icon: Wallet },
+		{ label: 'Settings', href: '/dashboard/settings', icon: Settings }
 	];
-
-	let currentPath = $derived(page.url.pathname);
-	let currentLabel = $derived(
-		navGroups.flatMap((g) => g.items).find((item) => item.href === currentPath)?.label ?? 'Home'
+	let current = $derived(
+		items.find((item) => item.href === page.url.pathname)?.label || 'Overview'
 	);
+	$effect(() => {
+		if (open) {
+			closeButton?.focus();
+			const old = document.body.style.overflow;
+			document.body.style.overflow = 'hidden';
+			return () => (document.body.style.overflow = old);
+		}
+	});
+	function close() {
+		open = false;
+		menuButton?.focus();
+	}
+	function keydown(e) {
+		if (!open) return;
+		if (e.key === 'Escape') {
+			close();
+			return;
+		}
+		if (e.key === 'Tab') {
+			const nodes = drawer.querySelectorAll('a,button');
+			const first = nodes[0],
+				last = nodes[nodes.length - 1];
+			if (e.shiftKey && document.activeElement === first) {
+				e.preventDefault();
+				last.focus();
+			} else if (!e.shiftKey && document.activeElement === last) {
+				e.preventDefault();
+				first.focus();
+			}
+		}
+	}
 </script>
 
-<svelte:head>
-	<!-- The dashboard is a private, authenticated area — keep it out of search results. -->
-	<meta name="robots" content="noindex, nofollow" />
-</svelte:head>
-
-<div class="canvas" class:collapsed>
-	<!-- ============ FLAT SIDEBAR (on the canvas) ============ -->
-	<aside class="sidebar" class:open={sidebarOpen}>
-		<div class="sidebar-top">
-			<!-- Collapsed (web only): the logo itself expands the rail back out. -->
-			<a
-				href="/"
-				class="sidebar-mark"
-				aria-label={collapsed ? 'Expand sidebar' : 'Buy Me Zobo home'}
-				onclick={(e) => {
-					if (collapsed) {
-						e.preventDefault();
-						collapsed = false;
-					}
-				}}
-			></a>
-			{#if !collapsed}
-				<button
-					class="sidebar-toggle desktop-toggle"
-					aria-label="Collapse sidebar"
-					onclick={() => (collapsed = true)}
-				>
-					<PanelLeft size={18} strokeWidth={1.75} />
-				</button>
-			{/if}
-			<button
-				class="sidebar-toggle mobile-toggle"
-				aria-label="Close menu"
-				onclick={() => (sidebarOpen = false)}
+<svelte:head
+	><meta name="robots" content="noindex,nofollow" /><title>{current} — Buy Me Zobo</title
+	></svelte:head
+>
+<svelte:window onkeydown={keydown} />
+<div class="dashboard-shell">
+	{#if open}<button class="drawer-scrim" aria-label="Close navigation" onclick={close}
+		></button>{/if}
+	<aside class="dash-sidebar" class:open bind:this={drawer}>
+		<div class="sidebar-brand">
+			<Brand /><button
+				class="drawer-close"
+				bind:this={closeButton}
+				aria-label="Close navigation"
+				onclick={close}><X size={20} /></button
 			>
-				<X size={20} strokeWidth={1.75} />
-			</button>
 		</div>
-
-		<nav class="sidebar-nav" aria-label="Dashboard">
-			{#each navGroups as group}
-				<div class="nav-group">
-					<span class="nav-heading">{group.heading}</span>
-					{#each group.items as item}
-						<a
-							href={item.href}
-							class="nav-item"
-							class:active={currentPath === item.href}
-							title={collapsed ? item.label : undefined}
-							onclick={() => (sidebarOpen = false)}
-						>
-							<item.icon size={18} strokeWidth={1.75} />
-							<span class="nav-label">{item.label}</span>
-						</a>
-					{/each}
-				</div>
-			{/each}
+		<span class="sidebar-caption">YOUR CREATIVE CORNER</span>
+		<nav aria-label="Dashboard navigation">
+			{#each items as item}<a
+					href={item.href}
+					class:active={page.url.pathname === item.href}
+					aria-current={page.url.pathname === item.href ? 'page' : undefined}
+					onclick={() => (open = false)}
+					><item.icon size={18} />{item.label}{#if page.url.pathname === item.href}<ChevronRight
+							size={15}
+						/>{/if}</a
+				>{/each}
 		</nav>
-
-		<div class="sidebar-foot">
-			<a
-				href="mailto:hello@buymezobo.com"
-				class="nav-item"
-				title={collapsed ? 'Help & support' : undefined}
-			>
-				<CircleHelp size={18} strokeWidth={1.75} />
-				<span class="nav-label">Help &amp; support</span>
-			</a>
-			<a href="/" class="nav-user" title={collapsed ? 'Your account' : undefined}>
-				<span class="nav-user-avatar">N</span>
-				<span class="nav-label nav-user-meta">
-					<strong>Nelson</strong>
-					<em>buymezobo.com/trxpznxl</em>
-				</span>
-			</a>
+		<div class="sidebar-nudge">
+			<ZoboCup class="sidebar-cup" /><strong>Keep making.<br />We'll hold the cup.</strong>
+			<p>Your work deserves a little love.</p>
+			<a href="/example">Explore the example <ArrowUpRight size={14} /></a>
 		</div>
-	</aside>
-
-	{#if sidebarOpen}
-		<button class="canvas-scrim" onclick={() => (sidebarOpen = false)} aria-label="Close menu"
-		></button>
-	{/if}
-
-	<!-- ============ THE ISLAND (elevated sheet) ============ -->
-	<main class="island">
-		<header class="island-head">
-			<div class="island-head-left">
-				<button
-					class="island-menu-btn"
-					onclick={() => {
-						collapsed = false;
-						sidebarOpen = true;
-					}}
-					aria-label="Open menu"
+		<a href="/dashboard/settings" class="sidebar-user"
+			><span class="avatar"
+				>{#if $creator.photo}<img src={$creator.photo} alt="" />{:else}{($creator.displayName ||
+						'Y')[0].toUpperCase()}{/if}</span
+			>
+			<div>
+				<strong>{$creator.displayName || 'Your creator page'}</strong><span
+					>{$creator.username ? `@${$creator.username}` : 'Make it yours in Settings'}</span
 				>
-					<Menu size={18} strokeWidth={1.75} />
-				</button>
-				<h1 class="island-title">{currentLabel}</h1>
+			</div></a
+		>
+	</aside>
+	<div class="dash-main">
+		<header class="dash-topbar">
+			<div>
+				<button
+					bind:this={menuButton}
+					class="dash-menu"
+					aria-label="Open navigation"
+					aria-expanded={open}
+					onclick={() => (open = true)}><Menu size={20} /></button
+				><span>Your page <span class="breadcrumb-slash">/</span> <strong>{current}</strong></span>
+			</div>
+			<div>
+				<span class="badge">DEMO WORKSPACE</span>{#if $creator.username}<a
+						href={creatorPath($creator.username)}
+						class="text-link">View page <ArrowUpRight size={15} /></a
+					>{/if}
 			</div>
 		</header>
-
-		<div class="island-body">
-			{@render children()}
-		</div>
-	</main>
+		<main class="dashboard-content" inert={open}>
+			{#if $ready}{@render children()}{:else}<p role="status">Loading your creative corner…</p>{/if}
+		</main>
+	</div>
 </div>
 
 <style>
-	:global(:root) {
-		--zobo-950: #2b060f;
-		--zobo-900: #4a0d1f;
-		--zobo-800: #5c1029;
-		--zobo-700: #7a1633;
-		--zobo-600: #971b3d;
-		--cream: #fbf3e7;
-		--cream-2: #f4e6d3;
-		--gold: #c98f3a;
-		--gold-light: #e0b565;
-		/* Island neutrals */
-		--canvas: #f7f5f2;
-		--sheet: #ffffff;
-		--line: #ece7e0;
-		--ink: #26201c;
-		--muted: #8c817a;
-		--muted-2: #b3a99f;
-	}
-	:global(body) {
-		margin: 0;
-		background: var(--canvas);
-	}
-
-	.canvas {
-		font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+	.dashboard-shell {
+		min-height: 100vh;
+		background: #f7f2ed;
 		display: grid;
-		grid-template-columns: 260px 1fr;
-		height: 100vh;
-		width: 100%;
-		background: var(--canvas);
-		color: var(--ink);
-		overflow: hidden;
-		transition: grid-template-columns 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+		grid-template-columns: 235px minmax(0, 1fr);
 	}
-	.canvas.collapsed {
-		grid-template-columns: 76px 1fr;
-	}
-	a {
-		text-decoration: none;
-		color: inherit;
-	}
-
-	/* ============ SIDEBAR ============ */
-	.sidebar {
+	.dash-sidebar {
+		position: sticky;
+		top: 0;
+		height: 100dvh;
+		padding: 30px 22px 20px;
+		border-right: 1px solid var(--line);
 		display: flex;
 		flex-direction: column;
-		padding: 1.5rem 1rem;
-		height: 100%;
-		/* Stationary by design — the MVP nav is short enough to never need to scroll. */
-		overflow: hidden;
+		background: #fcf7ef;
+		overflow-y: auto;
 	}
-	.sidebar-top {
+	.sidebar-brand {
+		margin-bottom: 45px;
 		display: flex;
-		align-items: center;
 		justify-content: space-between;
-		padding: 0 0.5rem 1.75rem;
 	}
-	.sidebar-mark {
-		width: 32px;
-		height: 32px;
-		border-radius: 9px;
-		background: linear-gradient(150deg, var(--zobo-600), var(--zobo-900));
-		box-shadow: 0 2px 6px -1px rgba(92, 16, 41, 0.4);
-		flex-shrink: 0;
-	}
-	.sidebar-toggle {
-		background: none;
-		border: none;
-		color: var(--muted-2);
-		cursor: pointer;
-		padding: 0.25rem;
-		display: flex;
-		flex-shrink: 0;
-	}
-	.sidebar-toggle:hover {
+	.sidebar-caption {
+		font-size: 14px;
+		letter-spacing: 0.12em;
 		color: var(--muted);
+		margin: 0 12px 15px;
 	}
-	.mobile-toggle {
-		display: none;
-	} /* only shown in mobile drawer */
-
-	.sidebar-nav {
+	.dash-sidebar nav {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
-		flex: 1;
+		gap: 7px;
 	}
-	.nav-group {
-		display: flex;
-		flex-direction: column;
-		gap: 0.15rem;
-	}
-	.nav-heading {
-		font-size: 0.68rem;
-		font-weight: 700;
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
-		color: var(--muted-2);
-		padding: 0 0.75rem;
-		margin-bottom: 0.35rem;
-		white-space: nowrap;
-		overflow: hidden;
-	}
-
-	.nav-item {
+	.dash-sidebar nav a {
 		display: flex;
 		align-items: center;
-		width: 100%;
-		gap: 0.7rem;
-		padding: 0.6rem 0.75rem;
-		border-radius: 9px;
-		font-size: 0.875rem;
-		font-weight: 500;
-		font-family: inherit;
-		color: #6b615a;
-		white-space: nowrap;
-		background: none;
-		border: none;
-		cursor: pointer;
-		text-align: left;
-		transition:
-			background 0.15s ease,
-			color 0.15s ease;
-	}
-	.nav-item:hover {
-		background: rgba(92, 16, 41, 0.05);
-		color: var(--ink);
-	}
-	.nav-item.active {
-		background: rgba(92, 16, 41, 0.09);
-		color: var(--zobo-800);
-		font-weight: 600;
-	}
-	.nav-item :global(svg) {
-		flex-shrink: 0;
-	}
-
-	/* ---- Collapsed rail (web) ---- */
-	.canvas.collapsed .sidebar-top {
-		justify-content: center;
-	}
-	.canvas.collapsed .nav-label {
-		opacity: 0;
-		width: 0;
-		overflow: hidden;
-	}
-	.canvas.collapsed .nav-item {
-		justify-content: center;
-		padding: 0.6rem;
-		gap: 0;
-	}
-	.canvas.collapsed .nav-heading {
-		opacity: 0;
-		height: 0;
-		margin: 0;
-		padding: 0;
-	}
-	.canvas.collapsed .sidebar-nav {
-		gap: 0.6rem;
-	}
-	.canvas.collapsed .nav-user {
-		justify-content: center;
-		padding: 0.4rem;
-	}
-	.canvas.collapsed .nav-user-meta {
-		display: none;
-	}
-
-	/* ---- Sidebar footer / user ---- */
-	.sidebar-foot {
-		display: flex;
-		flex-direction: column;
-		gap: 0.15rem;
-		padding-top: 0.85rem;
-		margin-top: 0.85rem;
-		border-top: 1px solid var(--line);
-	}
-	.nav-user {
-		display: flex;
-		align-items: center;
-		gap: 0.65rem;
-		padding: 0.5rem 0.6rem;
-		border-radius: 9px;
-		transition: background 0.15s ease;
-	}
-	.nav-user:hover {
-		background: rgba(92, 16, 41, 0.05);
-	}
-	.nav-user-avatar {
-		width: 30px;
-		height: 30px;
+		gap: 12px;
+		padding: 12px 14px;
 		border-radius: 8px;
-		background: linear-gradient(150deg, var(--zobo-600), var(--zobo-900));
+		color: var(--muted);
+		font-size: 14px;
+		font-weight: 550;
+	}
+	.dash-sidebar nav a.active {
+		background: var(--plum);
 		color: var(--cream);
+	}
+	.dash-sidebar nav a :global(svg:last-child:not(:first-child)) {
+		margin-left: auto;
+	}
+	.sidebar-nudge {
+		background: #f0d7df;
+		border-radius: 12px;
+		padding: 20px;
+		margin-top: auto;
+		margin-bottom: 25px;
+		position: relative;
+		overflow: hidden;
+	}
+	:global(.sidebar-cup) {
+		width: 72px;
+		float: right;
+		transform: rotate(10deg);
+		margin: 0 -10px 5px 0;
+	}
+	.sidebar-nudge strong {
+		font-size: 16px;
+		letter-spacing: -0.04em;
+		line-height: 1.3;
+		display: block;
+		margin: 10px 0;
+	}
+	.sidebar-nudge p {
+		font-size: 14px;
+		clear: both;
+		margin: 10px 0;
+	}
+	.sidebar-nudge a {
 		display: flex;
+		gap: 8px;
+		font-size: 14px;
+		font-weight: 600;
 		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-		font-size: 0.85rem;
-		flex-shrink: 0;
 	}
-	.nav-user-meta {
+	.sidebar-user {
+		border-top: 1px solid var(--line);
+		padding-top: 20px;
 		display: flex;
-		flex-direction: column;
-		overflow: hidden;
+		gap: 10px;
+		align-items: center;
 	}
-	.nav-user-meta strong {
-		font-size: 0.82rem;
-		color: var(--ink);
-		line-height: 1.2;
-	}
-	.nav-user-meta em {
-		font-style: normal;
-		font-size: 0.72rem;
-		color: var(--muted-2);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	/* ============ ISLAND ============ */
-	.island {
-		margin: 0.75rem 0.75rem 0.75rem 0;
-		background: var(--sheet);
-		border: 1px solid var(--line);
-		border-radius: 16px;
-		box-shadow:
-			0 10px 34px -12px rgba(43, 6, 15, 0.1),
-			0 4px 12px -8px rgba(43, 6, 15, 0.06);
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
+	.sidebar-user div {
 		min-width: 0;
 	}
-	.island-head {
-		height: 56px;
+	.sidebar-user strong {
+		font-size: 14px;
+		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.sidebar-user div > span {
+		display: block;
+		font-size: 14px;
+		color: var(--muted);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.dash-topbar {
+		min-height: 80px;
 		border-bottom: 1px solid var(--line);
-		padding: 0 1.25rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 15px 40px;
+		gap: 20px;
+		font-size: 14px;
+		background: #fffcf750;
+	}
+	.dash-topbar > div {
 		display: flex;
 		align-items: center;
-		flex-shrink: 0;
+		gap: 20px;
 	}
-	.island-head-left {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
+	.breadcrumb-slash {
+		padding: 0 12px;
+		color: #baa1ab;
 	}
-	.island-menu-btn {
-		display: none;
-		background: none;
-		border: none;
-		color: var(--ink);
-		cursor: pointer;
-		padding: 0.25rem;
+	.dashboard-content {
+		padding: 40px;
+		max-width: 1180px;
+		margin: auto;
 	}
-	.island-title {
-		font-size: 0.9rem;
-		font-weight: 600;
-		color: var(--ink);
-		margin: 0;
-	}
-
-	.island-body {
-		flex: 1;
-		overflow-y: auto;
-		min-height: 0;
-		display: flex;
-	}
-
-	/* ============ MOBILE ============ */
-	.canvas-scrim {
+	.dash-menu,
+	.drawer-close {
 		display: none;
 	}
-
-	@media (max-width: 900px) {
-		.canvas,
-		.canvas.collapsed {
-			grid-template-columns: 1fr;
+	.drawer-scrim {
+		position: fixed;
+		inset: 0;
+		background: #351c2960;
+		border: 0;
+		z-index: 30;
+	}
+	.dash-main {
+		min-width: 0;
+	}
+	.sidebar-nudge {
+		margin-top: 45px;
+	}
+	.sidebar-user {
+		margin-top: auto;
+	}
+	@media (max-width: 1000px) {
+		.dashboard-shell {
+			grid-template-columns: 210px minmax(0, 1fr);
 		}
-		.sidebar {
-			position: fixed;
-			inset: 0;
-			z-index: 60;
-			width: 100vw;
-			background: var(--canvas);
-			transform: translateX(-100%);
-			transition: transform 0.25s ease;
-			overflow-y: auto;
+		.dashboard-content {
+			padding: 28px;
 		}
-		/* The collapsed-rail centering is web-only — force the normal
-		   logo-left / close-right layout in the mobile drawer regardless. */
-		.canvas.collapsed .sidebar-top {
-			justify-content: space-between;
+		.dash-topbar {
+			padding: 15px 28px;
 		}
-		.sidebar.open {
-			transform: translateX(0);
+		.dash-sidebar {
+			padding: 25px 16px;
 		}
-		/* On mobile the rail-collapse never applies — always show full labels */
-		.canvas.collapsed .nav-label {
-			opacity: 1;
-			width: auto;
-		}
-		.canvas.collapsed .nav-item {
-			justify-content: flex-start;
-			padding: 0.6rem 0.75rem;
-			gap: 0.7rem;
-		}
-		.canvas.collapsed .nav-heading {
-			opacity: 1;
-			height: auto;
-			margin-bottom: 0.35rem;
-			padding: 0 0.75rem;
-		}
-		.canvas.collapsed .sidebar-nav {
-			gap: 1.25rem;
-		}
-		.canvas.collapsed .nav-user {
-			justify-content: flex-start;
-			padding: 0.5rem 0.6rem;
-		}
-		.canvas.collapsed .nav-user-meta {
-			display: flex;
-		}
-		.desktop-toggle {
+		.dash-topbar .badge {
 			display: none;
 		}
-		.mobile-toggle {
-			display: flex;
-		}
-		.canvas-scrim {
+	}
+	@media (max-width: 760px) {
+		.dashboard-shell {
 			display: block;
+		}
+		.dash-sidebar {
+			display: none;
 			position: fixed;
-			inset: 0;
-			z-index: 55;
-			background: rgba(43, 6, 15, 0.32);
-			border: none;
-			padding: 0;
+			left: 0;
+			top: 0;
+			width: 270px;
+			z-index: 40;
 		}
-		.island {
-			margin: 0.5rem;
-		}
-		.island-menu-btn {
+		.dash-sidebar.open {
 			display: flex;
+		}
+		.dash-topbar {
+			padding: 17px 20px;
+			min-height: 70px;
+		}
+		.dash-topbar > div {
+			gap: 10px;
+		}
+		.dash-topbar > div > span {
+			font-size: 14px;
+		}
+		.breadcrumb-slash {
+			padding: 0 5px;
+		}
+		.dashboard-content {
+			padding: 28px 20px;
+		}
+		.dash-menu,
+		.drawer-close {
+			display: flex;
+			border: 0;
+			background: transparent;
+			color: var(--plum);
+			padding: 4px;
+		}
+		.sidebar-brand {
+			align-items: center;
 		}
 	}
 </style>

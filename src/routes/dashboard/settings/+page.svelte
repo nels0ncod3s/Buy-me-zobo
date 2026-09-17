@@ -1,404 +1,223 @@
 <script>
-	import { User, Landmark, Bell } from '@lucide/svelte';
-
-	// Static/mock settings — not wired to a backend.
-	let displayName = $state('Nelson Adeyemi');
-	let username = $state('trxpznxl');
-	let bio = $state('Podcaster telling Lagos food stories, one episode at a time.');
-
-	let notifyNewSupporter = $state(true);
-	let notifyPayout = $state(true);
-	let notifyDigest = $state(false);
+	import { creator, saveProfile, validateUsername, notify, creatorPath } from '$lib/demo.js';
+	import ActionButton from '$lib/components/ActionButton.svelte';
+	import { ArrowUpRight, Upload, Check } from '@lucide/svelte';
+	let displayName = $state($creator.displayName);
+	let username = $state($creator.username);
+	let bio = $state($creator.bio);
+	let notifications = $state({ ...$creator.notifications });
+	let fileInput;
+	let uploading = $state(false);
+	let confirmDeactivate = $state(false);
+	async function save() {
+		if (!displayName.trim()) throw new Error('Please add your display name.');
+		const valid = validateUsername(username);
+		saveProfile({
+			displayName: displayName.trim(),
+			username: valid,
+			bio: bio.trim(),
+			notifications: { ...notifications }
+		});
+		username = valid;
+	}
+	async function upload(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		uploading = true;
+		try {
+			if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 1024 * 1024)
+				throw new Error('Choose a JPG or PNG smaller than 1 MB.');
+			const photo = await new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(new Error('Could not read this photo. Please try another.'));
+				reader.readAsDataURL(file);
+			});
+			saveProfile({ photo });
+			notify('Your profile photo has been updated.');
+		} catch (error) {
+			notify(error.message, 'error');
+		} finally {
+			uploading = false;
+			e.target.value = '';
+		}
+	}
 </script>
 
-<svelte:head>
-	<title>Settings — Buy Me Zobo</title>
-</svelte:head>
-
-<div class="dash">
-	<div class="dash-welcome">
-		<div>
-			<h2>Settings</h2>
-			<p>Manage your page, payout details, and notifications.</p>
-		</div>
-	</div>
-
-	<section class="card">
-		<div class="card-head">
-			<span class="card-icon"><User size={16} strokeWidth={1.9} /></span>
+<div class="page-heading">
+	<span class="eyebrow">MAKE YOURSELF AT HOME</span>
+	<h2>A page that feels like you.</h2>
+	<p>Your story, your little corner, your way.</p>
+</div>
+<div class="settings-stack">
+	<section class="panel">
+		<div class="row">
 			<div>
-				<h3>Profile</h3>
-				<p>This is what fans see on your page.</p>
+				<h3 class="section-title">Your profile</h3>
+				<p class="inline-note">The face and story behind every zobo.</p>
 			</div>
+			{#if $creator.username}<a class="text-link" href={creatorPath($creator.username)}
+					>Preview <ArrowUpRight size={15} /></a
+				>{/if}
 		</div>
-
-		<div class="avatar-row">
-			<span class="avatar-circle">N</span>
-			<div class="avatar-actions">
-				<button type="button" class="btn-secondary">Change photo</button>
-				<span class="avatar-hint">JPG or PNG, up to 1MB.</span>
-			</div>
-		</div>
-
-		<div class="field-grid">
-			<label class="field">
-				<span>Display name</span>
-				<input type="text" bind:value={displayName} />
-			</label>
-			<label class="field">
-				<span>Page address</span>
-				<span class="field-input-affix">
-					<span>buymezobo.com/</span>
-					<input type="text" bind:value={username} />
-				</span>
-			</label>
-			<label class="field field-wide">
-				<span>Bio</span>
-				<textarea rows="2" bind:value={bio}></textarea>
-			</label>
-		</div>
-	</section>
-
-	<section class="card">
-		<div class="card-head">
-			<span class="card-icon"><Landmark size={16} strokeWidth={1.9} /></span>
+		<div class="photo-row">
+			<span class="avatar large"
+				>{#if $creator.photo}<img
+						src={$creator.photo}
+						alt="Your current profile"
+					/>{:else}{(displayName || 'Y')[0].toUpperCase()}{/if}</span
+			>
 			<div>
-				<h3>Payout bank</h3>
-				<p>Where your Friday payouts land.</p>
+				<button
+					class="button secondary small"
+					disabled={uploading}
+					aria-busy={uploading}
+					onclick={() => fileInput.click()}
+					>{#if uploading}<span class="spinner"></span>Updating photo…{:else}<Upload size={14} /> Change
+						photo{/if}</button
+				>
+				<p class="inline-note">JPG or PNG, up to 1 MB. Saved on this device.</p>
+				<input
+					class="file-input"
+					bind:this={fileInput}
+					type="file"
+					accept="image/jpeg,image/png"
+					onchange={upload}
+					aria-label="Choose profile photo"
+				/>
 			</div>
 		</div>
 		<div class="field-grid">
-			<label class="field">
-				<span>Bank</span>
-				<input type="text" placeholder="Not connected" readonly />
-			</label>
-			<label class="field">
-				<span>Account number</span>
-				<input type="text" placeholder="Not connected" readonly />
-			</label>
+			<label class="field"
+				>Display name<input
+					bind:value={displayName}
+					maxlength="60"
+					autocomplete="name"
+					placeholder="What should we call you?"
+				/></label
+			><label class="field"
+				>Page address<input
+					bind:value={username}
+					maxlength="24"
+					autocapitalize="none"
+					spellcheck="false"
+					placeholder="yourname"
+				/><small>/creator/{username || 'yourname'}</small></label
+			><label class="field wide"
+				>Your story<textarea
+					rows="4"
+					bind:value={bio}
+					maxlength="300"
+					placeholder="What do you make? What keeps you going?"></textarea><small
+					>{bio.length}/300 characters</small
+				></label
+			>
 		</div>
-		<a href="/dashboard/payouts" class="btn-secondary bank-link">Connect a bank</a>
+		<div class="save-row">
+			<ActionButton
+				action={save}
+				success="Your profile and preferences are saved."
+				busyLabel="Saving changes…">Save changes <Check size={15} /></ActionButton
+			>
+		</div>
 	</section>
-
-	<section class="card">
-		<div class="card-head">
-			<span class="card-icon"><Bell size={16} strokeWidth={1.9} /></span>
+	<section class="panel">
+		<h3 class="section-title">The things you'd like to hear about</h3>
+		<p class="inline-note">These preferences are saved for the demo. Emails are not sent yet.</p>
+		{#each [{ key: 'support', title: 'A new little kindness', description: 'When someone sends you a zobo.' }, { key: 'payout', title: 'Payout updates', description: 'When your payout status changes.' }, { key: 'digest', title: 'A weekly catch-up', description: 'Your week in gifts and good words.' }] as item}<label
+				class="switch-row"
+				><span>{item.title}<small>{item.description}</small></span><input
+					type="checkbox"
+					bind:checked={notifications[item.key]}
+				/></label
+			>{/each}
+		<div class="save-row">
+			<ActionButton
+				action={save}
+				success="Your profile and preferences are saved."
+				busyLabel="Saving preferences…">Save preferences</ActionButton
+			>
+		</div>
+	</section>
+	<section class="panel">
+		<div class="row">
 			<div>
-				<h3>Notifications</h3>
-				<p>Choose what you hear about, and how often.</p>
+				<h3 class="section-title">Your demo payout destination</h3>
+				<p class="inline-note">
+					{$creator.bank
+						? `${$creator.bank.name} · ending ${$creator.bank.last4}`
+						: 'No destination added yet.'}
+				</p>
 			</div>
-		</div>
-		<div class="toggle-list">
-			<label class="toggle-row">
-				<div>
-					<h4>New supporter</h4>
-					<span>Get notified the moment someone sends a Zobo.</span>
-				</div>
-				<input type="checkbox" class="switch" bind:checked={notifyNewSupporter} />
-			</label>
-			<label class="toggle-row">
-				<div>
-					<h4>Payout sent</h4>
-					<span>A heads up each time money lands in your bank.</span>
-				</div>
-				<input type="checkbox" class="switch" bind:checked={notifyPayout} />
-			</label>
-			<label class="toggle-row">
-				<div>
-					<h4>Weekly digest</h4>
-					<span>A short summary of your page's performance.</span>
-				</div>
-				<input type="checkbox" class="switch" bind:checked={notifyDigest} />
-			</label>
+			<a href="/dashboard/payouts" class="button secondary small">Manage destination</a>
 		</div>
 	</section>
-
-	<div class="save-row">
-		<button type="button" class="danger-link">Deactivate my page</button>
-		<button type="button" class="btn-save">Save changes</button>
-	</div>
+	<section class="panel pause-panel">
+		<h3 class="section-title">Need a little pause?</h3>
+		<p class="inline-note">
+			Pause your demo page to stop accepting test gifts. Your profile and history stay here.
+		</p>
+		{#if !$creator.active}<ActionButton
+				class="button secondary small"
+				action={() => saveProfile({ active: true })}
+				success="Your demo page is active again."
+				busyLabel="Reactivating…">Reactivate my page</ActionButton
+			>{:else if confirmDeactivate}<div class="status-line">
+				Pause your page? Visitors will see that support is unavailable.
+			</div>
+			<div class="save-row">
+				<button class="button secondary small" onclick={() => (confirmDeactivate = false)}
+					>Keep my page active</button
+				><ActionButton
+					class="button small"
+					action={() => {
+						saveProfile({ active: false });
+						confirmDeactivate = false;
+					}}
+					success="Your demo page is paused."
+					busyLabel="Pausing…">Yes, pause my page</ActionButton
+				>
+			</div>{:else}<button class="text-link danger" onclick={() => (confirmDeactivate = true)}
+				>Pause my page</button
+			>{/if}
+	</section>
 </div>
 
 <style>
-	.dash {
-		flex: 1;
-		min-width: 0;
-		width: 100%;
-		padding: 1.75rem clamp(1.25rem, 3vw, 2.25rem) 2.5rem;
+	.settings-stack {
 		display: flex;
 		flex-direction: column;
-		gap: 1.25rem;
-		max-width: 900px;
-		margin: 0 auto;
+		gap: 22px;
+		max-width: 850px;
 	}
-	.dash-welcome h2 {
-		font-size: 1.5rem;
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		color: var(--zobo-950);
-		margin: 0 0 0.3rem;
-	}
-	.dash-welcome p {
-		font-size: 0.9rem;
-		color: var(--muted);
-		margin: 0;
-	}
-
-	.card {
-		background: var(--sheet);
-		border: 1px solid var(--line);
-		border-radius: 14px;
-		padding: 1.4rem 1.5rem;
-		min-width: 0;
-	}
-	.card-head {
-		display: flex;
-		align-items: flex-start;
-		gap: 0.75rem;
-		margin-bottom: 1.25rem;
-	}
-	.card-icon {
-		width: 34px;
-		height: 34px;
-		border-radius: 9px;
-		flex-shrink: 0;
+	.photo-row {
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		background: rgba(151, 27, 61, 0.09);
-		color: var(--zobo-700);
+		gap: 20px;
+		margin: 30px 0;
 	}
-	.card-head h3 {
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--zobo-950);
-		margin: 0 0 0.2rem;
+	.photo-row p {
+		margin-top: 7px;
 	}
-	.card-head p {
-		font-size: 0.8rem;
-		color: var(--muted);
-		margin: 0;
+	.file-input {
+		display: none;
 	}
-
-	/* ============ AVATAR ============ */
-	.avatar-row {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		padding-bottom: 1.4rem;
-		margin-bottom: 1.4rem;
-		border-bottom: 1px solid var(--line);
-	}
-	.avatar-circle {
-		width: 56px;
-		height: 56px;
-		border-radius: 50%;
-		flex-shrink: 0;
-		background: linear-gradient(150deg, var(--zobo-600), var(--zobo-900));
-		color: var(--cream);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 700;
-		font-size: 1.35rem;
-	}
-	.avatar-actions {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-	}
-	.btn-secondary {
-		display: inline-flex;
-		align-items: center;
-		align-self: flex-start;
-		font-family: inherit;
-		font-weight: 600;
-		font-size: 0.8rem;
-		color: var(--zobo-800);
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		padding: 0.4rem 0.9rem;
-		cursor: pointer;
-		transition:
-			background 0.15s ease,
-			border-color 0.15s ease;
-	}
-	.bank-link {
-		margin-top: 1.1rem;
-	}
-	.btn-secondary:hover {
-		background: rgba(92, 16, 41, 0.06);
-		border-color: rgba(92, 16, 41, 0.2);
-	}
-	.avatar-hint {
-		font-size: 0.72rem;
-		color: var(--muted-2);
-	}
-
-	.field-grid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1rem;
-	}
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-		min-width: 0;
-	}
-	.field-wide {
-		grid-column: 1 / -1;
-	}
-	.field span:first-child {
-		font-size: 0.78rem;
-		font-weight: 600;
-		color: var(--ink);
-	}
-	.field input,
-	.field textarea {
-		width: 100%;
-		min-width: 0;
-		box-sizing: border-box;
-		font-family: inherit;
-		font-size: 0.85rem;
-		color: var(--ink);
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 9px;
-		padding: 0.55rem 0.75rem;
-		resize: vertical;
-	}
-	.field input:focus,
-	.field textarea:focus {
-		outline: none;
-		border-color: var(--zobo-700);
-	}
-	.field input[readonly] {
-		color: var(--muted);
-		cursor: not-allowed;
-	}
-	.field-input-affix {
-		display: flex;
-		align-items: center;
-		background: var(--canvas);
-		border: 1px solid var(--line);
-		border-radius: 9px;
-		padding: 0 0 0 0.75rem;
-		overflow: hidden;
-		min-width: 0;
-	}
-	.field-input-affix span {
-		font-size: 0.85rem;
-		color: var(--muted-2);
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
-	.field-input-affix input {
-		flex: 1;
-		width: auto;
-		min-width: 0;
-		border: none;
-		background: none;
-		padding: 0.55rem 0.75rem 0.55rem 0.1rem;
-	}
-	.field-input-affix:focus-within {
-		border-color: var(--zobo-700);
-	}
-
-	/* ============ TOGGLES ============ */
-	.toggle-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.9rem;
-	}
-	.toggle-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		cursor: pointer;
-	}
-	.toggle-row h4 {
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: var(--ink);
-		margin: 0;
-	}
-	.toggle-row span {
-		font-size: 0.76rem;
-		color: var(--muted-2);
-	}
-	.switch {
-		appearance: none;
-		width: 38px;
-		height: 22px;
-		border-radius: 999px;
-		background: var(--line);
-		position: relative;
-		flex-shrink: 0;
-		cursor: pointer;
-		transition: background 0.15s ease;
-	}
-	.switch::after {
-		content: '';
-		position: absolute;
-		top: 2px;
-		left: 2px;
-		width: 18px;
-		height: 18px;
-		border-radius: 50%;
-		background: #fff;
-		box-shadow: 0 1px 2px rgba(43, 6, 15, 0.25);
-		transition: transform 0.15s ease;
-	}
-	.switch:checked {
-		background: var(--zobo-700);
-	}
-	.switch:checked::after {
-		transform: translateX(16px);
-	}
-
 	.save-row {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
+		justify-content: flex-end;
+		gap: 12px;
+		margin-top: 24px;
 		flex-wrap: wrap;
 	}
-	.danger-link {
-		font-family: inherit;
-		font-size: 0.82rem;
-		font-weight: 500;
-		color: var(--muted-2);
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 0.4rem 0;
-		transition: color 0.15s ease;
+	.pause-panel > .inline-note {
+		margin: 12px 0 20px;
 	}
-	.danger-link:hover {
-		color: #c94b4b;
+	.pause-panel > .text-link {
+		border: 0;
+		background: transparent;
+		padding: 0;
 	}
-	.btn-save {
-		font-family: inherit;
-		font-weight: 600;
-		font-size: 0.88rem;
-		color: var(--cream);
-		background: var(--zobo-800);
-		border: none;
-		border-radius: 999px;
-		padding: 0.65rem 1.5rem;
-		cursor: pointer;
-		transition: background 0.15s ease;
-	}
-	.btn-save:hover {
-		background: var(--zobo-700);
-	}
-
-	@media (max-width: 560px) {
-		.field-grid {
-			grid-template-columns: 1fr;
-		}
+	.settings-stack .section-title {
+		margin-bottom: 6px;
 	}
 </style>

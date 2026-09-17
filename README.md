@@ -1,42 +1,34 @@
-# sv
+# Buy Me Zobo
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A SvelteKit frontend demo for a Nigerian creator-support platform, with a zobo-inspired visual identity, creator pages, and a connected demo dashboard.
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
+## Run locally
 
 ```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.16.3 create --template minimal --no-types --add prettier tailwindcss="plugins:none" --install npm Zobo
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+npm ci
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
-
-To create a production version of your app:
+## Checks
 
 ```sh
+npm test
+npm run lint
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+## Try the demo
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- `/` — landing page and interactive support preview.
+- `/example` — an illustrative creator page; no signup or payment required.
+- `/signup` — choose a username and display name to create a local demo profile.
+- `/login` — opens the demo workspace; authentication is intentionally mocked.
+- `/dashboard` — profile, support, setup checklist, and simulated balance.
+- `/dashboard/settings` — edit your identity, bio, photo, preferences, and page status.
+- `/dashboard/supporters` — test gift history and message search.
+- `/dashboard/payouts` — masked sample bank destination and simulated payouts.
+- `/creator/[username]` — preview the profile saved on the current browser.
+
+Profile data, preferences, photos, test gifts, and simulated payouts persist in localStorage on the current browser. A new demo profile replaces the previous demo on that device. Creator links do not publish or transfer a local profile to another browser; visitors without that profile see an explanatory page. The example page works for every visitor and its test gifts reset on reload.
+
+No real authentication, payments, bank verification, transfers, or notification emails are performed. Pricing is illustrative. For bank demonstrations use sample details; only the final four account digits are stored.
