@@ -1,8 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { validateUsername } from '$lib/ui.js';
+import { rememberVerification } from './verification.js';
 const value = (f, k) => String(f.get(k) || '').trim();
 export const actionsFor = (mode) => ({
-	default: async ({ request, locals, url }) => {
+	default: async ({ request, locals, url, cookies }) => {
 		const f = await request.formData(),
 			email = value(f, 'email'),
 			password = String(f.get('password') || '');
@@ -31,7 +32,8 @@ export const actionsFor = (mode) => ({
 			});
 			if (error) return fail(400, { error: error.message });
 			if (data.session) redirect(303, '/onboarding');
-			return { success: 'Check your email to confirm your account, then sign in.' };
+			rememberVerification(cookies, email);
+			redirect(303, '/verify-email');
 		}
 		if (mode === 'forgot-password') {
 			const { error } = await client.auth.resetPasswordForEmail(email, {

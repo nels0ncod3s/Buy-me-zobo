@@ -17,17 +17,19 @@ const reserved = new Set([
 	'pricing',
 	'support',
 	'auth',
+	'payment',
+	'onboarding',
 	'www'
 ]);
 export function validateUsername(value) {
 	const username = value.trim().toLowerCase();
 	if (!/^[a-z0-9_]{3,24}$/.test(username))
-		throw new Error('Use 3–24 letters, numbers, or underscores for your page address.');
-	if (reserved.has(username)) throw new Error('That address is reserved. Please choose another.');
+		throw new Error('Use 3–24 letters, numbers, or underscores for your username.');
+	if (reserved.has(username)) throw new Error('That username is reserved. Please choose another.');
 	return username;
 }
 export function creatorPath(username) {
-	return `/creator/${encodeURIComponent(username)}`;
+	return `/${encodeURIComponent(username)}`;
 }
 export function creatorUrl(username) {
 	return `${window.location.origin}${creatorPath(username)}`;

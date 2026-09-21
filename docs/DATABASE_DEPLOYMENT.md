@@ -100,3 +100,18 @@ On a transfer timeout, funds remain reserved. Use Refresh in payout history to v
 Refunds and chargebacks require an operational process and matching ledger adjustment; automated handling is outside this MVP. Schedule reconciliation and review unresolved pending payouts before enabling unrestricted live traffic.
 
 Request limits use hashed keys with hourly windows. Periodically remove expired `request_limits` rows. Old image objects are not automatically removed when a creator replaces an image; add a retention cleanup as usage grows.
+
+## Six-digit signup verification
+
+The signup screen now moves to `/verify-email`, accepts six digits (including paste/autofill), and continues to `/onboarding` after Supabase verifies the code. Resend has a 60-second cooldown. The app shows a ten-minute timer; Supabase must also enforce expiry.
+
+Before enabling this flow in production, configure the hosted project in Supabase:
+
+1. Authentication → Email provider: enable email confirmations, set Email OTP Expiration to **600 seconds**, and OTP length to **6**.
+2. Authentication → Email Templates → Confirm signup: use the HTML in `supabase/templates/confirmation.html`. It includes `{{ .Token }}`, not a confirmation-link-only email.
+3. Keep a working SMTP provider configured for delivery to users outside your Supabase organization.
+4. Verify a fresh signup: receive a six-digit code, submit it, complete username setup, resend after a minute, and confirm an expired code is rejected.
+
+The checked-in `config.toml` mirrors these values for local development. Committing it does **not** apply hosted Auth settings. Hosted settings and actual email delivery still require verification.
+
+Creator links now use `/<username>` on the existing Buy Me Zobo domain. Existing `/creator/<username>` links redirect permanently. Public pages skip remote session validation; protected dashboard routes retain it.

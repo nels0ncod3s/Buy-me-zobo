@@ -25,14 +25,12 @@ export async function saveProfile(patch) {
 	}
 	if (patch.notifications) {
 		const n = patch.notifications;
-		const { error } = await db
-			.from('creator_preferences')
-			.upsert({
-				creator_id: user.id,
-				notify_support: n.support,
-				notify_payout: n.payout,
-				weekly_digest: n.digest
-			});
+		const { error } = await db.from('creator_preferences').upsert({
+			creator_id: user.id,
+			notify_support: n.support,
+			notify_payout: n.payout,
+			weekly_digest: n.digest
+		});
 		if (error) throw new Error('Profile saved, but preferences could not be saved. Please retry.');
 	}
 	await invalidateAll();

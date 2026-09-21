@@ -21,7 +21,8 @@
 		{
 			label: 'Preview your creator page',
 			done: Boolean($creator.username),
-			href: $creator.username ? creatorPath($creator.username) : '/signup'
+			href: $creator.username ? creatorPath($creator.username) : '/signup',
+			external: Boolean($creator.username)
 		}
 	]);
 </script>
@@ -44,9 +45,7 @@
 			{$creator.username ? 'Good things start with a shared link.' : 'Give your creativity a home.'}
 		</h3>
 		<p>
-			{$creator.username
-				? `/creator/${$creator.username}`
-				: 'Choose your name and make this space yours.'}
+			{$creator.username ? `/${$creator.username}` : 'Choose your name and make this space yours.'}
 		</p>
 		<div class="share-actions">
 			{#if $creator.username}<ActionButton
@@ -54,8 +53,11 @@
 					action={() => copyPage($creator.username)}
 					success="Your page link is copied."
 					busyLabel="Copying…"><Copy size={14} /> Copy your link</ActionButton
-				><a href={creatorPath($creator.username)} class="text-link"
-					>Preview page <ArrowUpRight size={15} /></a
+				><a
+					href={creatorPath($creator.username)}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="text-link">Preview page <ArrowUpRight size={15} /></a
 				>{:else}<a href="/signup" class="button cream small"
 					>Create a page <ArrowUpRight size={15} /></a
 				>{/if}
@@ -99,8 +101,11 @@
 				<ZoboCup class="empty-cup" />
 				<h3>Your first zobo is out there.</h3>
 				<p>Share your page so your people can support your next creation.</p>
-				<a class="text-link" href={$creator.username ? creatorPath($creator.username) : '/example'}
-					>View your page <ArrowUpRight size={15} /></a
+				<a
+					class="text-link"
+					href={$creator.username ? creatorPath($creator.username) : '/example'}
+					target="_blank"
+					rel="noopener noreferrer">View your page <ArrowUpRight size={15} /></a
 				>
 			</div>{/if}
 	</section>
@@ -109,7 +114,10 @@
 		<h3 class="setup-title">Make it feel like you.</h3>
 		<p class="inline-note">A few little touches before you share your page.</p>
 		<div class="checklist">
-			{#each checklist as item}<a href={item.href}
+			{#each checklist as item}<a
+					href={item.href}
+					target={item.external ? '_blank' : undefined}
+					rel={item.external ? 'noopener noreferrer' : undefined}
 					><span class="check-circle" class:done={item.done}
 						>{#if item.done}<Check size={12} />{:else}•{/if}</span
 					>{item.label}<ArrowUpRight size={13} /></a
