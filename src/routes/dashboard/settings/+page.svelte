@@ -1,5 +1,62 @@
 <script>
-	import { creator, saveProfile, validateUsername, notify, creatorPath } from '$lib/demo.js';
+	import { getContext } from 'svelte';
+	const creator = getContext('creator');
+	import { validateUsername, notify, creatorPath } from '$lib/ui.js';
+	import { saveProfile, uploadImage, logout } from '$lib/account.js';
+	import { getSupabase } from '$lib/supabase/client.js';
+	import { invalidateAll } from '$app/navigation';
+	let unitAmount = $state($creator.unitAmount),
+		cta = $state($creator.cta),
+		linkTitle = $state(''),
+		linkUrl = $state('');
+	let coverInput,
+		coverBusy = $state(false);
+	let editLinkId = $state(null);
+	async function saveLink() {
+		let url;
+		try {
+			url = new URL(linkUrl);
+		} catch {
+			throw new Error('Enter a valid website address.');
+		}
+		if (!['https:', 'http:'].includes(url.protocol))
+			throw new Error('Use an http or https address.');
+		if (!linkTitle.trim()) throw new Error('Give your link a title.');
+		const db = getSupabase(),
+			payload = { title: linkTitle.trim(), url: url.href };
+		const result = editLinkId
+			? await db.from('creator_links').update(payload).eq('id', editLinkId)
+			: await db
+					.from('creator_links')
+					.insert({ ...payload, creator_id: $creator.id, position: $creator.links.length });
+		if (result.error) throw new Error('Could not save your link.');
+		linkTitle = '';
+		linkUrl = '';
+		editLinkId = null;
+		await invalidateAll();
+	}
+	async function changeLink(link, remove = false) {
+		const db = getSupabase();
+		const result = remove
+			? await db.from('creator_links').delete().eq('id', link.id)
+			: await db.from('creator_links').update({ is_visible: !link.is_visible }).eq('id', link.id);
+		if (result.error) throw new Error('Could not update your link.');
+		await invalidateAll();
+	}
+	async function coverUpload(e) {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		coverBusy = true;
+		try {
+			await uploadImage(file, 'cover');
+			notify('Cover updated.');
+		} catch (error) {
+			notify(error.message, 'error');
+		} finally {
+			coverBusy = false;
+			e.target.value = '';
+		}
+	}
 	import ActionButton from '$lib/components/ActionButton.svelte';
 	import { ArrowUpRight, Upload, Check } from '@lucide/svelte';
 	let displayName = $state($creator.displayName);
@@ -12,10 +69,18 @@
 	async function save() {
 		if (!displayName.trim()) throw new Error('Please add your display name.');
 		const valid = validateUsername(username);
-		saveProfile({
+		if (
+			!Number.isFinite(Number(unitAmount)) ||
+			Number(unitAmount) < 100 ||
+			Number(unitAmount) > 1000000
+		)
+			throw new Error('Set a zobo price between ₦100 and ₦1,000,000.');
+		await saveProfile({
 			displayName: displayName.trim(),
 			username: valid,
 			bio: bio.trim(),
+			unitAmount: Number(unitAmount),
+			cta: cta.trim(),
 			notifications: { ...notifications }
 		});
 		username = valid;
@@ -25,15 +90,7 @@
 		if (!file) return;
 		uploading = true;
 		try {
-			if (!['image/jpeg', 'image/png'].includes(file.type) || file.size > 1024 * 1024)
-				throw new Error('Choose a JPG or PNG smaller than 1 MB.');
-			const photo = await new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => resolve(reader.result);
-				reader.onerror = () => reject(new Error('Could not read this photo. Please try another.'));
-				reader.readAsDataURL(file);
-			});
-			saveProfile({ photo });
+			await uploadImage(file);
 			notify('Your profile photo has been updated.');
 		} catch (error) {
 			notify(error.message, 'error');
@@ -76,18 +133,52 @@
 					>{#if uploading}<span class="spinner"></span>Updating photo…{:else}<Upload size={14} /> Change
 						photo{/if}</button
 				>
-				<p class="inline-note">JPG or PNG, up to 1 MB. Saved on this device.</p>
+				<p class="inline-note">JPG, PNG or WebP, up to 2 MB.</p>
 				<input
 					class="file-input"
 					bind:this={fileInput}
 					type="file"
-					accept="image/jpeg,image/png"
+					accept="image/jpeg,image/png,image/webp"
 					onchange={upload}
 					aria-label="Choose profile photo"
 				/>
 			</div>
 		</div>
+		<div class="photo-row">
+			<div>
+				{#if $creator.cover}<img
+						class="cover-preview"
+						src={$creator.cover}
+						alt="Your cover"
+					/>{/if}<button
+					class="button secondary small"
+					disabled={coverBusy}
+					aria-busy={coverBusy}
+					onclick={() => coverInput.click()}
+					>{coverBusy ? 'Uploading cover…' : 'Change cover'}</button
+				>
+				<p class="inline-note">JPG, PNG or WebP, up to 5 MB.</p>
+				<input
+					class="file-input"
+					bind:this={coverInput}
+					type="file"
+					accept="image/jpeg,image/png,image/webp"
+					onchange={coverUpload}
+					aria-label="Choose cover image"
+				/>
+			</div>
+		</div>
 		<div class="field-grid">
+			<label class="field"
+				>Price per zobo (₦)<input
+					type="number"
+					min="100"
+					max="1000000"
+					step="0.01"
+					bind:value={unitAmount}
+				/></label
+			>
+			<label class="field">Support button text<input maxlength="160" bind:value={cta} /></label>
 			<label class="field"
 				>Display name<input
 					bind:value={displayName}
@@ -123,7 +214,7 @@
 	</section>
 	<section class="panel">
 		<h3 class="section-title">The things you'd like to hear about</h3>
-		<p class="inline-note">These preferences are saved for the demo. Emails are not sent yet.</p>
+		<p class="inline-note">Your preferences are saved. Notification delivery is not enabled yet.</p>
 		{#each [{ key: 'support', title: 'A new little kindness', description: 'When someone sends you a zobo.' }, { key: 'payout', title: 'Payout updates', description: 'When your payout status changes.' }, { key: 'digest', title: 'A weekly catch-up', description: 'Your week in gifts and good words.' }] as item}<label
 				class="switch-row"
 				><span>{item.title}<small>{item.description}</small></span><input
@@ -142,7 +233,7 @@
 	<section class="panel">
 		<div class="row">
 			<div>
-				<h3 class="section-title">Your demo payout destination</h3>
+				<h3 class="section-title">Your payout destination</h3>
 				<p class="inline-note">
 					{$creator.bank
 						? `${$creator.bank.name} · ending ${$creator.bank.last4}`
@@ -152,15 +243,60 @@
 			<a href="/dashboard/payouts" class="button secondary small">Manage destination</a>
 		</div>
 	</section>
+	<section class="panel">
+		<h3 class="section-title">Your links</h3>
+		<p class="inline-note">Give your people a way to find your work.</p>
+		{#each $creator.links as link}<div class="link-row">
+				<a href={link.url} target="_blank" rel="noopener noreferrer">{link.title} ↗</a><button
+					class="text-link"
+					onclick={() => {
+						editLinkId = link.id;
+						linkTitle = link.title;
+						linkUrl = link.url;
+					}}>Edit</button
+				><ActionButton
+					class="text-link"
+					action={() => changeLink(link)}
+					success="Link visibility updated.">{link.is_visible ? 'Hide' : 'Show'}</ActionButton
+				><ActionButton
+					class="text-link danger"
+					action={() => changeLink(link, true)}
+					success="Link removed.">Remove</ActionButton
+				>
+			</div>{/each}
+		<div class="field-grid">
+			<label class="field">Title<input bind:value={linkTitle} maxlength="80" /></label><label
+				class="field"
+				>Website address<input
+					type="url"
+					bind:value={linkUrl}
+					maxlength="2048"
+					placeholder="https://"
+				/></label
+			>
+		</div>
+		<div class="save-row">
+			<ActionButton action={saveLink} success="Link saved." busyLabel="Saving link…"
+				>{editLinkId ? 'Save link' : 'Add link'}</ActionButton
+			>{#if editLinkId}<button
+					class="text-link"
+					onclick={() => {
+						editLinkId = null;
+						linkTitle = '';
+						linkUrl = '';
+					}}>Cancel edit</button
+				>{/if}
+		</div>
+	</section>
 	<section class="panel pause-panel">
 		<h3 class="section-title">Need a little pause?</h3>
 		<p class="inline-note">
-			Pause your demo page to stop accepting test gifts. Your profile and history stay here.
+			Pause your page to stop accepting support. Your profile and history stay here.
 		</p>
 		{#if !$creator.active}<ActionButton
 				class="button secondary small"
 				action={() => saveProfile({ active: true })}
-				success="Your demo page is active again."
+				success="Your page is active again."
 				busyLabel="Reactivating…">Reactivate my page</ActionButton
 			>{:else if confirmDeactivate}<div class="status-line">
 				Pause your page? Visitors will see that support is unavailable.
@@ -170,20 +306,44 @@
 					>Keep my page active</button
 				><ActionButton
 					class="button small"
-					action={() => {
-						saveProfile({ active: false });
+					action={async () => {
+						await saveProfile({ active: false });
 						confirmDeactivate = false;
 					}}
-					success="Your demo page is paused."
+					success="Your page is paused."
 					busyLabel="Pausing…">Yes, pause my page</ActionButton
 				>
 			</div>{:else}<button class="text-link danger" onclick={() => (confirmDeactivate = true)}
 				>Pause my page</button
 			>{/if}
 	</section>
+	<section class="panel">
+		<h3 class="section-title">Your account</h3>
+		<p class="inline-note">{$creator.email}</p>
+		<ActionButton action={logout} busyLabel="Signing out…">Log out</ActionButton>
+	</section>
 </div>
 
 <style>
+	.cover-preview {
+		width: 100%;
+		max-height: 140px;
+		object-fit: cover;
+		border-radius: 10px;
+		margin-bottom: 12px;
+	}
+	.link-row {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		flex-wrap: wrap;
+		padding: 16px 0;
+	}
+	.link-row a {
+		margin-right: auto;
+		overflow-wrap: anywhere;
+	}
+
 	.settings-stack {
 		display: flex;
 		flex-direction: column;

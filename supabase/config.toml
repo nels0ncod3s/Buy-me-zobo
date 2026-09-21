@@ -1,0 +1,28 @@
+project_id = "buymezobo"
+
+[functions.get-public-creator]
+verify_jwt = false
+
+[functions.create-payment]
+verify_jwt = false
+
+[functions.payment-status]
+verify_jwt = false
+
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.payout-webhook]
+verify_jwt = false
+
+[functions.list-banks]
+verify_jwt = false
+
+[functions.create-payout-account]
+verify_jwt = false
+
+[functions.create-payout]
+verify_jwt = false
+
+[functions.reconcile-payout]
+verify_jwt = false

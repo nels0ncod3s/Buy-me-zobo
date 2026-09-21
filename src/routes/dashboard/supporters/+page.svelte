@@ -1,5 +1,18 @@
 <script>
-	import { creator, naira, creatorPath } from '$lib/demo.js';
+	import { getContext } from 'svelte';
+	const creator = getContext('creator');
+	import { naira, creatorPath } from '$lib/ui.js';
+	import ActionButton from '$lib/components/ActionButton.svelte';
+	import { getSupabase } from '$lib/supabase/client.js';
+	import { invalidateAll } from '$app/navigation';
+	async function moderate(gift) {
+		const { error } = await getSupabase()
+			.from('support_transactions')
+			.update({ creator_hidden: !gift.hidden })
+			.eq('id', gift.id);
+		if (error) throw new Error('Could not update this gift.');
+		await invalidateAll();
+	}
 	import ZoboCup from '$lib/components/ZoboCup.svelte';
 	import { ArrowUpRight, Search } from '@lucide/svelte';
 	let search = $state('');
@@ -18,7 +31,7 @@
 <section class="panel">
 	<div class="row">
 		<h3 class="section-title">
-			Your test gifts <span class="badge">{$creator.gifts.length}</span>
+			Your gifts <span class="badge">{$creator.gifts.length}</span>
 		</h3>
 		{#if $creator.gifts.length}<label class="search-box"
 				><Search size={15} /><input
@@ -33,7 +46,14 @@
 					<span class="avatar">{gift.name[0].toUpperCase()}</span>
 					<div>
 						<strong>{gift.name}</strong><span
-							>{new Date(gift.date).toLocaleDateString('en-NG')} · Test gift</span
+							>{new Date(gift.date).toLocaleDateString('en-NG')} · Gift</span
+						>
+						<ActionButton
+							class="text-link"
+							action={() => moderate(gift)}
+							success="Gift visibility updated."
+							busyLabel="Updating…"
+							>{gift.hidden ? 'Restore to public wall' : 'Hide from public wall'}</ActionButton
 						>
 						<p>{gift.note || 'A little kindness, no words needed.'}</p>
 					</div>
@@ -46,11 +66,13 @@
 		</div>{:else}<div class="empty">
 			<ZoboCup class="empty-cup" />
 			<h3>Your people will find you.</h3>
-			<p>Try sending a gift on your demo page. The name, message, and amount will appear here.</p>
+			<p>
+				Your latest 100 confirmed gifts appear here. Share your page to invite your first supporter.
+			</p>
 			<a
 				class="button secondary small"
 				href={$creator.username ? creatorPath($creator.username) : '/signup'}
-				>{$creator.username ? 'Open your demo page' : 'Create your demo page'}
+				>{$creator.username ? 'Open your page' : 'Create your page'}
 				<ArrowUpRight size={15} /></a
 			>
 		</div>{/if}

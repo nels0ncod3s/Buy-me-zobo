@@ -1,6 +1,8 @@
 <script>
 	import { page } from '$app/state';
-	import { goto } from '$app/navigation';
+	import { setContext, untrack } from 'svelte';
+	import { writable } from 'svelte/store';
+	import { logout } from '$lib/account.js';
 	import ActionButton from '$lib/components/ActionButton.svelte';
 	import {
 		LayoutDashboard,
@@ -13,10 +15,12 @@
 		ChevronRight,
 		LogOut
 	} from '@lucide/svelte';
-	import { creator, ready, creatorPath } from '$lib/demo.js';
+	import { creatorPath } from '$lib/ui.js';
 	import Brand from '$lib/components/Brand.svelte';
 	import ZoboCup from '$lib/components/ZoboCup.svelte';
-	let { children } = $props();
+	let { children, data } = $props();
+	const creator = setContext('creator', writable(untrack(() => data.creator)));
+	$effect(() => creator.set(data.creator));
 	let open = $state(false);
 	let closeButton;
 	let menuButton;
@@ -113,10 +117,9 @@
 			busyLabel="Leaving…"
 			action={async () => {
 				open = false;
-				await goto('/login');
+				await logout();
 			}}
-			success="Demo closed. Your profile is still saved on this device."
-			><LogOut size={16} /> Log out</ActionButton
+			success="You have signed out."><LogOut size={16} /> Log out</ActionButton
 		>
 	</aside>
 	<div class="dash-main">
@@ -131,14 +134,14 @@
 				><span>Your page <span class="breadcrumb-slash">/</span> <strong>{current}</strong></span>
 			</div>
 			<div>
-				<span class="badge">DEMO WORKSPACE</span>{#if $creator.username}<a
+				<span class="badge">CREATOR WORKSPACE</span>{#if $creator.username}<a
 						href={creatorPath($creator.username)}
 						class="text-link">View page <ArrowUpRight size={15} /></a
 					>{/if}
 			</div>
 		</header>
 		<main class="dashboard-content" inert={open}>
-			{#if $ready}{@render children()}{:else}<p role="status">Loading your creative corner…</p>{/if}
+			{@render children()}
 		</main>
 	</div>
 </div>

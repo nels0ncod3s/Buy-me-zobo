@@ -15,7 +15,7 @@
 	import Brand from '$lib/components/Brand.svelte';
 	import ZoboCup from '$lib/components/ZoboCup.svelte';
 	import ActionButton from '$lib/components/ActionButton.svelte';
-	import { naira, validateUsername, notify } from '$lib/demo.js';
+	import { naira, validateUsername, notify } from '$lib/ui.js';
 	let menuOpen = $state(false);
 	let handle = $state('');
 	let claiming = $state(false);
@@ -272,16 +272,15 @@
 				</div>
 				<div class="price-detail">
 					<span class="price-number">5<span>%</span></span><span class="price-label"
-						>PROPOSED SERVICE FEE</span
+						>PLATFORM FEE</span
 					>
 					<div class="price-example">
 						<div><span>A little support</span><strong>₦1,000</strong></div>
 						<div><span>Service fee</span><strong>₦50</strong></div>
-						<div class="price-total"><span>Supporter total</span><strong>₦1,050</strong></div>
+						<div class="price-total"><span>Supporter total</span><strong>₦1,000</strong></div>
 					</div>
 					<small
-						>Illustrative pricing for the demo. Live payment fees and payout timing will be
-						confirmed before launch.</small
+						>5% is deducted from support, plus payment processing fees. No monthly subscription.</small
 					>
 				</div>
 			</div>
@@ -293,7 +292,7 @@
 				<ZoboCup class="faq-cup" />
 			</div>
 			<div class="faq-list">
-				{#each [{ q: 'Who is Buy Me Zobo for?', a: 'Anyone making something people value: writers, musicians, developers, teachers, artists, and creators of all kinds. Your page gives your audience a place to show support.' }, { q: 'Do supporters need an account?', a: 'No. The example page lets you try sending a zobo without signing up. Real payments are not enabled yet.' }, { q: 'Is this accepting real payments?', a: 'Not yet. You can create a demo profile, personalise your page, and try test gifts on this device. No payment is taken and no real payout is made.' }, { q: 'Can I customise my page?', a: 'Yes. Your demo display name, username, photo, and bio can be updated in Settings. Changes are saved on your current browser.' }] as faq}<details
+				{#each [{ q: 'Who is Buy Me Zobo for?', a: 'Anyone making something people value: writers, musicians, developers, teachers, artists, and creators of all kinds. Your page gives your audience a place to show support.' }, { q: 'Do supporters need an account?', a: 'No. Supporters can pay through secure Paystack checkout without creating an account.' }, { q: 'Is this accepting real payments?', a: 'Creator pages use Paystack checkout when payments are enabled. The example page is a simulation and never takes payment.' }, { q: 'Can I customise my page?', a: 'Yes. Update your name, photo, cover, bio, links, and zobo price in Settings. Your profile is saved to your account.' }] as faq}<details
 					>
 						<summary>{faq.q}<span>+</span></summary>
 						<p>{faq.a}</p>

@@ -1,5 +1,5 @@
 <script>
-	import { notify } from '$lib/demo.js';
+	import { notify } from '$lib/ui.js';
 	let {
 		action,
 		success = '',

@@ -1,34 +1,46 @@
 # Buy Me Zobo
 
-A SvelteKit frontend demo for a Nigerian creator-support platform, with a zobo-inspired visual identity, creator pages, and a connected demo dashboard.
+A Nigerian creator-support platform built with SvelteKit, Supabase Auth, Postgres, Storage and Paystack Edge Functions.
 
-## Run locally
+Creators get a public page, profile and cover uploads, links, a supporter feed with privacy controls, and a dashboard for support and payouts. The isolated `/example` page is a simulation and never takes payment.
+
+## Run
 
 ```sh
 npm ci
 npm run dev
-```
-
-## Checks
-
-```sh
 npm test
-npm run lint
 npm run build
+npx deno test --allow-env supabase/tests/webhook_test.ts
 ```
 
-## Try the demo
+Copy `.env.example` to `.env` if targeting a different Supabase project. The checked-in project URL and publishable key are public identifiers, not administrator credentials.
 
-- `/` — landing page and interactive support preview.
-- `/example` — an illustrative creator page; no signup or payment required.
-- `/signup` — choose a username and display name to create a local demo profile.
-- `/login` — opens the demo workspace; authentication is intentionally mocked.
-- `/dashboard` — profile, support, setup checklist, and simulated balance.
-- `/dashboard/settings` — edit your identity, bio, photo, preferences, and page status.
-- `/dashboard/supporters` — test gift history and message search.
-- `/dashboard/payouts` — masked sample bank destination and simulated payouts.
-- `/creator/[username]` — preview the profile saved on the current browser.
+## Backend
 
-Profile data, preferences, photos, test gifts, and simulated payouts persist in localStorage on the current browser. A new demo profile replaces the previous demo on that device. Creator links do not publish or transfer a local profile to another browser; visitors without that profile see an explanatory page. The example page works for every visitor and its test gifts reset on reload.
+- Migrations: `supabase/migrations/`
+- Edge Functions: `supabase/functions/`
+- Access-control and ledger checks: `supabase/tests/security.sql`
+- Deployment and required provider settings: [Deployment guide](docs/DATABASE_DEPLOYMENT.md)
+- Schema and money rules: [Database schema](docs/DATABASE_SCHEMA.md)
 
-No real authentication, payments, bank verification, transfers, or notification emails are performed. Pricing is illustrative. For bank demonstrations use sample details; only the final four account digits are stored.
+**Payments are not enabled until Paystack credentials and webhooks are configured.** Email confirmation and reset also require the Auth URL/template settings in the deployment guide. Code and backend deployment alone do not validate email delivery or real transfers.
+
+## Routes
+
+- `/`: landing page
+- `/signup`, `/login`, `/forgot-password`, `/reset-password`: real Supabase Auth
+- `/onboarding`: create a profile after authentication
+- `/creator/[username]`: public, persistent creator page
+- `/dashboard`: protected workspace
+- `/dashboard/settings`: profile, images, price, links, preferences and logout
+- `/dashboard/supporters`: latest 100 confirmed gifts and public-wall moderation
+- `/dashboard/payouts`: verified bank destination and payout history
+- `/payment/return`: verified payment status
+- `/example`: clearly labelled, in-memory example
+
+Account and financial state is no longer stored in a demo localStorage record. Supabase SSR uses cookie-backed sessions, and database row-level security enforces ownership.
+
+## Integration checks
+
+`tests/integration.mjs` accepts a disposable confirmed test account through `TEST_EMAIL`, `TEST_PASSWORD` and `TEST_USERNAME`. It starts a local server, creates a profile, tests login/session/logout, profile and link persistence, public privacy, image restrictions, and changes the test password. Use only a dedicated test account and remove its profile/account afterward. It does not send email or initiate money transfers.

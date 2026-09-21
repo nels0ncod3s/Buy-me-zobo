@@ -1,10 +1,12 @@
 <script>
+	import { getContext } from 'svelte';
+	const creator = getContext('creator');
 	import { ArrowUpRight, Copy, Heart, Wallet, Check, Sparkles } from '@lucide/svelte';
-	import { creator, creatorPath, copyPage, naira } from '$lib/demo.js';
+	import { creatorPath, copyPage, naira } from '$lib/ui.js';
 	import ActionButton from '$lib/components/ActionButton.svelte';
 	import ZoboCup from '$lib/components/ZoboCup.svelte';
-	let earned = $derived($creator.gifts.reduce((sum, gift) => sum + gift.amount, 0));
-	let paid = $derived($creator.payouts.reduce((sum, payout) => sum + payout.amount, 0));
+	let earned = $derived($creator.totals.earned);
+	let paid = $derived($creator.totals.paid);
 	let checklist = $derived([
 		{
 			label: 'Make your profile feel like you',
@@ -12,7 +14,7 @@
 			href: '/dashboard/settings'
 		},
 		{
-			label: 'Add a demo payout destination',
+			label: 'Add a payout destination',
 			done: Boolean($creator.bank),
 			href: '/dashboard/payouts'
 		},
@@ -55,7 +57,7 @@
 				><a href={creatorPath($creator.username)} class="text-link"
 					>Preview page <ArrowUpRight size={15} /></a
 				>{:else}<a href="/signup" class="button cream small"
-					>Create a demo page <ArrowUpRight size={15} /></a
+					>Create a page <ArrowUpRight size={15} /></a
 				>{/if}
 		</div>
 	</div>
@@ -63,19 +65,19 @@
 </section>
 <div class="metrics">
 	<article class="panel">
-		<span class="metric-label"><Wallet size={15} /> Total test support</span><strong
+		<span class="metric-label"><Wallet size={15} /> Total support</span><strong
 			>{naira(earned)}</strong
 		><small>A little fuel for what comes next.</small>
 	</article>
 	<article class="panel">
-		<span class="metric-label"><Heart size={15} /> Test gifts received</span><strong
-			>{$creator.gifts.length}<span> zobos</span></strong
+		<span class="metric-label"><Heart size={15} /> Gifts received</span><strong
+			>{$creator.totals.count}<span> gifts</span></strong
 		><small>Every gift has a story behind it.</small>
 	</article>
 	<article class="panel">
-		<span class="metric-label"><Sparkles size={15} /> Demo balance</span><strong
-			>{naira(earned - paid)}</strong
-		><small>Simulated funds. No real money held.</small>
+		<span class="metric-label"><Sparkles size={15} /> Available balance</span><strong
+			>{naira($creator.totals.balance)}</strong
+		><small>After fees and reserved payouts.</small>
 	</article>
 </div>
 <div class="overview-grid">
@@ -96,9 +98,9 @@
 			</div>{:else}<div class="empty">
 				<ZoboCup class="empty-cup" />
 				<h3>Your first zobo is out there.</h3>
-				<p>Share your page or try sending a test gift to see your support appear here.</p>
+				<p>Share your page so your people can support your next creation.</p>
 				<a class="text-link" href={$creator.username ? creatorPath($creator.username) : '/example'}
-					>Try a test gift <ArrowUpRight size={15} /></a
+					>View your page <ArrowUpRight size={15} /></a
 				>
 			</div>{/if}
 	</section>
@@ -115,8 +117,7 @@
 		</div>
 		<div class="divider"></div>
 		<p class="inline-note">
-			This demo stays on your current browser. A shared link won't transfer your profile to another
-			device.
+			Your page is ready to share. Keep your profile and payout destination up to date.
 		</p>
 	</section>
 </div>

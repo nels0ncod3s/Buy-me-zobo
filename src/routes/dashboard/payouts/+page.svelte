@@ -1,100 +1,162 @@
 <script>
-	import { creator, connectDemoBank, simulatePayout, naira } from '$lib/demo.js';
+	import { getContext } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
+	import { edge } from '$lib/supabase/client.js';
+	import { naira, notify } from '$lib/ui.js';
 	import ActionButton from '$lib/components/ActionButton.svelte';
 	import ZoboCup from '$lib/components/ZoboCup.svelte';
-	import { Landmark, ArrowUpRight } from '@lucide/svelte';
+	const creator = getContext('creator');
 	let editing = $state(false),
-		bank = $state($creator.bank?.name || ''),
-		account = $state('');
-	let balance = $derived(
-		$creator.gifts.reduce((sum, g) => sum + g.amount, 0) -
-			$creator.payouts.reduce((sum, p) => sum + p.amount, 0)
-	);
-	function connect() {
-		connectDemoBank(bank, account);
+		banks = $state([]),
+		bank = $state(''),
+		account = $state(''),
+		amount = $state(''),
+		confirm = $state(false);
+	let payoutKey = null;
+	async function edit() {
+		if (editing) {
+			editing = false;
+			return;
+		}
+		const result = await edge('list-banks');
+		banks = result.banks;
+		editing = true;
+	}
+	async function connect() {
+		const result = await edge('create-payout-account', { bank, account });
 		account = '';
 		editing = false;
+		await invalidateAll();
+		notify('Verified ' + result.name + ' · ' + result.bank + ' · ' + result.last4);
+	}
+	async function payout() {
+		const value = Number(amount);
+		if (!Number.isFinite(value) || value < 100 || !/^\d+(\.\d{1,2})?$/.test(String(amount)))
+			throw new Error('Enter a valid amount of at least ₦100.');
+		payoutKey ||= crypto.randomUUID();
+		const result = await edge('create-payout', {
+			key: payoutKey,
+			amount: Math.round(value * 100),
+			destination: $creator.bank?.id
+		});
+		confirm = false;
+		amount = '';
+		payoutKey = null;
+		await invalidateAll();
+		notify(
+			result.message || 'Payout requested. Its status will update after provider confirmation.'
+		);
+	}
+	async function refresh(p) {
+		const result = await edge('reconcile-payout', { id: p.id });
+		await invalidateAll();
+		notify('Payout status: ' + result.status + '.');
 	}
 </script>
 
 <div class="page-heading">
 	<span class="eyebrow">A LITTLE FUEL FOR WHAT'S NEXT</span>
 	<h2>Your support, at a glance.</h2>
-	<p>Explore the payout experience. Everything here is simulated.</p>
+	<p>Manage your verified bank account and track your payouts.</p>
 </div>
 <div class="payout-grid">
 	<section class="panel">
-		<span class="eyebrow">AVAILABLE DEMO BALANCE</span><strong class="balance"
-			>{naira(balance)}</strong
+		<span class="eyebrow">AVAILABLE BALANCE</span><strong class="balance"
+			>{naira($creator.totals.balance)}</strong
 		>
-		<p class="inline-note">Test gifts only. No real money will be sent.</p>
+		<p class="inline-note">
+			After platform and processing fees. Pending payouts are already reserved.
+		</p>
 		<div class="payout-action">
-			<ActionButton
-				action={simulatePayout}
-				success="Demo payout recorded. No bank transfer was made."
-				busyLabel="Recording demo payout…"
-				>Simulate a payout <ArrowUpRight size={15} /></ActionButton
-			>
+			{#if $creator.bank}
+				<label class="field"
+					>Payout amount (₦)<input
+						type="number"
+						min="100"
+						step="0.01"
+						max={$creator.totals.balance}
+						bind:value={amount}
+						oninput={() => {
+							confirm = false;
+							payoutKey = null;
+						}}
+					/></label
+				>
+				{#if confirm}<p class="inline-note">
+						Send {naira(Number(amount))} to {$creator.bank.accountName} at {$creator.bank.name},
+						ending {$creator.bank.last4}?
+					</p>
+					<ActionButton action={payout} busyLabel="Requesting payout…">Confirm payout</ActionButton
+					><button class="text-link" onclick={() => (confirm = false)}>Cancel</button>
+				{:else}<button
+						class="button"
+						disabled={!amount || Number(amount) < 100 || Number(amount) > $creator.totals.balance}
+						onclick={() => (confirm = true)}>Review payout →</button
+					>{/if}
+			{:else}<p class="inline-note">Connect a verified bank account to request a payout.</p>{/if}
 		</div>
 	</section>
 	<section class="panel">
-		<div class="row">
-			<h3 class="section-title"><Landmark size={17} /> Your destination</h3>
-			<span class="badge">DEMO</span>
-		</div>
+		<h3 class="section-title">Your destination</h3>
 		<p class="destination">
 			{$creator.bank
 				? `${$creator.bank.name} · ending ${$creator.bank.last4}`
 				: 'Give your support somewhere to land.'}
 		</p>
 		<p class="inline-note">
-			Use sample details. We only keep the last four digits and never contact a bank.
+			{$creator.bank?.accountName ||
+				'Your account is verified with Paystack. We store only a recipient token and masked account details.'}
 		</p>
-		<button class="button secondary small" onclick={() => (editing = !editing)}
-			>{editing ? 'Cancel' : $creator.bank ? 'Change destination' : 'Connect demo bank'}</button
+		<ActionButton class="button secondary small" action={edit} busyLabel="Loading banks…"
+			>{editing ? 'Cancel' : $creator.bank ? 'Change destination' : 'Connect bank'}</ActionButton
 		>
 	</section>
 </div>
 {#if editing}<section class="panel bank-form">
-		<h3 class="section-title">Add a demo destination</h3>
+		<h3 class="section-title">Verify your bank account</h3>
 		<div class="field-grid">
 			<label class="field"
-				>Demo bank<select bind:value={bank}
-					><option value="">Choose a bank</option><option>Access Bank</option><option>GTBank</option
-					><option>UBA</option><option>Zenith Bank</option><option>Other demo bank</option></select
+				>Bank<select bind:value={bank}
+					><option value="">Choose a bank</option>{#each banks as b}<option value={b.code}
+							>{b.name}</option
+						>{/each}</select
 				></label
 			><label class="field"
-				>Sample account number<input
+				>Account number<input
 					bind:value={account}
 					inputmode="numeric"
 					maxlength="10"
-					placeholder="0123456789"
+					autocomplete="off"
 				/></label
 			>
 		</div>
-		<ActionButton
-			action={connect}
-			success="Demo destination saved. No bank verification was performed."
-			busyLabel="Saving destination…">Save demo destination</ActionButton
-		>
+		<ActionButton action={connect} busyLabel="Verifying account…">Verify and save</ActionButton>
 	</section>{/if}
 <section class="panel">
 	<h3 class="section-title">Your payout story</h3>
+	<p class="inline-note">
+		Latest 100 payouts. Refresh a pending payout to check with the provider.
+	</p>
 	{#if $creator.payouts.length}<div class="table-wrap">
 			<table>
-				<thead><tr><th>Date</th><th>Destination</th><th>Amount</th><th>Status</th></tr></thead
-				><tbody
-					>{#each $creator.payouts as payout}<tr
-							><td>{new Date(payout.date).toLocaleDateString('en-NG')}</td><td
-								>{payout.destination}</td
-							><td>{naira(payout.amount)}</td><td><span class="badge">Simulated</span></td></tr
+				<thead><tr><th>Date</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody
+					>{#each $creator.payouts as p}<tr
+							><td>{new Date(p.date).toLocaleDateString('en-NG')}</td><td>{naira(p.amount)}</td><td
+								><span class="badge">{p.status}</span></td
+							><td
+								>{#if ['pending', 'processing'].includes(p.status)}<ActionButton
+										class="text-link"
+										action={() => refresh(p)}
+										busyLabel="Checking…">Refresh</ActionButton
+									>{/if}</td
+							></tr
 						>{/each}</tbody
 				>
 			</table>
 		</div>{:else}<div class="empty">
 			<ZoboCup class="empty-cup" />
 			<h3>No payouts just yet.</h3>
-			<p>When you simulate your first payout, its details will appear here.</p>
+			<p>Your payouts will appear here when you request one.</p>
 		</div>{/if}
 </section>
 
@@ -121,7 +183,7 @@
 		margin: 25px 0 12px;
 		letter-spacing: -0.03em;
 	}
-	.payout-grid .button.secondary {
+	.payout-grid :global(.button.secondary) {
 		margin-top: 24px;
 	}
 	.payout-grid .section-title {

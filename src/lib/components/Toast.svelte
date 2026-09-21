@@ -1,5 +1,5 @@
 <script>
-	import { notice } from '$lib/demo.js';
+	import { notice } from '$lib/ui.js';
 	import { Check, AlertCircle, X } from '@lucide/svelte';
 	$effect(() => {
 		const current = $notice;

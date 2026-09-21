@@ -1,10 +1,14 @@
 <script>
-	import { creator, addGift, naira, copyPage, notify } from '$lib/demo.js';
+	import { naira, copyPage, notify } from '$lib/ui.js';
+	import { edge } from '$lib/supabase/client.js';
 	import Brand from './Brand.svelte';
 	import ZoboCup from './ZoboCup.svelte';
 	import ActionButton from './ActionButton.svelte';
 	import { Heart, ArrowUpRight, Check, Copy, ShieldCheck } from '@lucide/svelte';
-	let { example = false } = $props();
+	let { example = false, profileData = null, giftData = [], links = [] } = $props();
+	let email = $state(''),
+		showName = $state(false),
+		showMessage = $state(false);
 	const amara = {
 		displayName: 'Amara Okafor',
 		username: 'amara',
@@ -12,13 +16,12 @@
 		photo: '',
 		active: true
 	};
-	let profile = $derived(example ? amara : $creator);
+	let profile = $derived(example ? amara : profileData);
 	let quantity = $state(1),
 		name = $state(''),
 		note = $state(''),
 		sent = $state(false);
-	let amount = $derived(quantity * 1000),
-		fee = $derived(amount * 0.05);
+	let amount = $derived(quantity * (profile.unitAmount || 1000));
 	let busy = $state(false),
 		error = $state('');
 	let exampleGifts = $state([
@@ -30,7 +33,7 @@
 		},
 		{ id: '2', name: 'A kind stranger', note: 'For the next story. Keep going!', amount: 1000 }
 	]);
-	let gifts = $derived(example ? exampleGifts : $creator.gifts);
+	let gifts = $derived(example ? exampleGifts : giftData);
 	async function send(e) {
 		e.preventDefault();
 		if (busy) return;
@@ -38,7 +41,7 @@
 		error = '';
 		try {
 			await new Promise((resolve) => setTimeout(resolve, 300));
-			if (!profile.active) throw new Error('This page is paused. Test gifts are unavailable.');
+			if (!profile.active) throw new Error('This page is paused. Support is unavailable.');
 			if (example)
 				exampleGifts = [
 					{
@@ -49,13 +52,28 @@
 					},
 					...exampleGifts
 				];
-			else addGift({ name, note, amount });
+			else {
+				const result = await edge('create-payment', {
+					username: profile.username,
+					quantity,
+					email,
+					name,
+					note,
+					showName,
+					showMessage
+				});
+				const url = new URL(result.url);
+				if (url.protocol !== 'https:' || url.hostname !== 'checkout.paystack.com')
+					throw new Error('Payment address could not be verified.');
+				window.location.assign(url.href);
+				return;
+			}
 			sent = true;
 			notify('Your test zobo was delivered. No payment was taken.');
 			name = '';
 			note = '';
 		} catch (err) {
-			error = err.message || 'Could not send your test gift. Please try again.';
+			error = err.message || 'Could not start your payment. Please try again.';
 			notify(error, 'error');
 		} finally {
 			busy = false;
@@ -71,11 +89,16 @@
 >
 <div class="creator-page">
 	<header class="creator-header wrap">
-		<Brand /><a class="button secondary small" href={example ? '/signup' : '/dashboard'}
-			>{example ? 'Start your own page' : 'Back to dashboard'} <ArrowUpRight size={15} /></a
+		<Brand /><a class="button secondary small" href="/signup"
+			>Start your own page <ArrowUpRight size={15} /></a
 		>
 	</header>
-	<div class="creator-cover">
+	<div
+		class="creator-cover"
+		style:background-image={profile.cover ? `url("${profile.cover}")` : undefined}
+		style:background-size="cover"
+		style:background-position="center"
+	>
 		<span class="cover-flower">✳</span>
 		<div class="cover-type serif italic">Good things take heart.</div>
 		<ZoboCup class="cover-cup" />
@@ -86,7 +109,7 @@
 				>{#if profile.photo}<img src={profile.photo} alt={profile.displayName} />{:else}<span
 						class="serif italic">{(profile.displayName || 'Y')[0].toLowerCase()}.</span
 					>{/if}</span
-			><span class="badge">{example ? 'EXAMPLE CREATOR' : 'YOUR DEMO PAGE'}</span>
+			><span class="badge">{example ? 'EXAMPLE CREATOR' : 'CREATOR PAGE'}</span>
 			<h1>{profile.displayName || 'Your creative corner'}</h1>
 			<span class="creator-handle">@{profile.username}</span>
 			<p class="creator-bio">
@@ -98,11 +121,19 @@
 					>{:else}<ActionButton
 						class="button secondary small"
 						action={() => copyPage(profile.username)}
-						success="Your demo page link is copied."
+						success="Your page link is copied."
 						busyLabel="Copying…"><Copy size={14} /> Copy page link</ActionButton
 					>{/if}
 			</div>
 		</div>
+		{#if links.length}<nav class="creator-links" aria-label="Creator links">
+				{#each links as link}<a
+						class="button secondary small"
+						href={link.url}
+						target="_blank"
+						rel="noopener noreferrer">{link.title} ↗</a
+					>{/each}
+			</nav>{/if}
 		<aside class="support-column">
 			<section class="support-widget panel">
 				<div class="widget-title">
@@ -113,6 +144,15 @@
 					</div>
 				</div>
 				{#if profile.active}<form onsubmit={send}>
+						{#if !example}<label class="field"
+								>Email for your receipt<input
+									type="email"
+									bind:value={email}
+									maxlength="320"
+									autocomplete="email"
+									required
+								/><small>Your email stays private.</small></label
+							>{/if}
 						<fieldset class="field">
 							<legend>How much kindness?</legend>
 							<div class="quantity-picker">
@@ -135,27 +175,34 @@
 								autocomplete="name"
 							/></label
 						><label class="field"
-							>Leave a little good word <span class="optional"
-								>optional · shown on this demo page</span
-							><textarea
+							>Leave a little good word <span class="optional">optional</span><textarea
 								bind:value={note}
 								maxlength="300"
 								rows="3"
 								placeholder="Your work made my day…"></textarea></label
 						>
+						{#if !example}<label class="consent"
+								><input type="checkbox" bind:checked={showName} /> Show my name on the public gift wall</label
+							><label class="consent"
+								><input type="checkbox" bind:checked={showMessage} /> Show my message on the public gift
+								wall</label
+							>{/if}
 						<div class="checkout-total">
 							<div>
 								<span>Support for {profile.displayName.split(' ')[0] || 'the creator'}</span><strong
 									>{naira(amount)}</strong
 								>
 							</div>
-							<div><span>Illustrative service fee (5%)</span><strong>{naira(fee)}</strong></div>
-							<div><span>Total preview</span><strong>{naira(amount + fee)}</strong></div>
+
+							<div><span>Total</span><strong>{naira(amount)}</strong></div>
 						</div>
 						<button class="button full" disabled={busy} aria-busy={busy}
 							>{#if busy}<span class="spinner"></span>Sending kindness…{:else if sent}<Check
 									size={17}
-								/> Send another test zobo{:else}Send a test zobo <Heart size={17} />{/if}</button
+								/> Send another test zobo{:else}{example
+									? 'Send a test zobo'
+									: profile.cta || 'Support with zobo'}
+								<Heart size={17} />{/if}</button
 						>{#if error}<p class="form-error" role="alert">{error}</p>{/if}{#if sent}<p
 								class="gift-success"
 								role="status"
@@ -163,15 +210,16 @@
 								A little kindness delivered. Thank you.
 							</p>{/if}
 					</form>{:else}<div class="status-line">
-						This creator is taking a little pause. Test gifts are unavailable.
+						This creator is taking a little pause. Support is unavailable.
 					</div>{/if}<span class="microcopy"
-					><ShieldCheck size={13} /> Demo only. No payment will be taken.</span
+					><ShieldCheck size={13} />
+					{example ? 'Demo only. No payment will be taken.' : 'Secure checkout by Paystack.'}</span
 				>
 			</section>
 			<p class="demo-explainer">
 				{example
 					? 'Meet an example page. These stories and gifts are illustrative; try sending one yourself.'
-					: 'Your profile and test gifts stay on this device. This demo link does not publish your profile for other visitors.'}
+					: 'The creator receives your support less a 5% platform fee and payment processing fees.'}
 			</p>
 			<div class="powered-by"><span>GOOD THINGS GROW HERE</span><Brand /></div>
 		</aside>
@@ -184,7 +232,7 @@
 			<p class="community-note">
 				{example
 					? 'Illustrative messages from an example community.'
-					: 'Test gifts sent on this browser appear here and in your dashboard.'}
+					: 'Kind words shared with permission. Supporters can keep their name and message private.'}
 			</p>
 			{#if gifts.length}<div class="gift-wall">
 					{#each gifts.slice(0, 8) as gift}<article>
@@ -204,6 +252,24 @@
 </div>
 
 <style>
+	.consent {
+		display: flex;
+		gap: 10px;
+		align-items: flex-start;
+		font-size: 13px;
+		color: var(--muted);
+	}
+	.consent input {
+		margin-top: 4px;
+	}
+	.creator-links {
+		display: flex;
+		gap: 10px;
+		flex-wrap: wrap;
+		margin-top: 20px;
+		grid-column: 1;
+	}
+
 	.creator-header {
 		height: 95px;
 		display: flex;
