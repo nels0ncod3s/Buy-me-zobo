@@ -1,12 +1,16 @@
 <script>
+	import { Eye, EyeOff } from '@lucide/svelte';
+	import VerificationForm from './VerificationForm.svelte';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import Brand from './Brand.svelte';
 	import ZoboCup from './ZoboCup.svelte';
-	let { mode, form, initialUsername = '' } = $props();
+	let { mode, form, initialUsername = '', verification } = $props();
 	let busy = $state(false);
+	let showPassword = $state(false);
 	const titles = {
 		login: 'Come on in.',
+		'verify-email': 'Check your inbox.',
 		signup: 'Make room for good things.',
 		onboarding: 'Make this page yours.',
 		'forgot-password': 'A fresh start.',
@@ -49,79 +53,93 @@
 		<div class="auth-form-wrap">
 			<span class="eyebrow">A HOME FOR YOUR CREATIVITY</span>
 			<h1>{titles[mode]}</h1>
-			<form
-				method="POST"
-				use:enhance={() => {
-					busy = true;
-					return async ({ update }) => {
-						try {
-							await update({ reset: false });
-						} finally {
-							busy = false;
-						}
-					};
-				}}
-			>
-				{#if mode === 'signup'}<input
-						type="hidden"
-						name="username"
-						value={page.url.searchParams.get('u') || ''}
-					/>{/if}
-				{#if mode === 'onboarding'}
-					<label class="field"
-						>Display name<input
-							name="displayName"
-							autocomplete="name"
-							maxlength="60"
-							required
-						/></label
-					>
-					<label class="field"
-						>Page address<input
+			{#if mode === 'verify-email'}
+				<VerificationForm data={verification} {form} />
+			{:else}
+				<form
+					method="POST"
+					use:enhance={() => {
+						busy = true;
+						return async ({ update }) => {
+							try {
+								await update({ reset: false });
+							} finally {
+								busy = false;
+							}
+						};
+					}}
+				>
+					{#if mode === 'signup'}<input
+							type="hidden"
 							name="username"
-							value={initialUsername}
-							pattern={'[a-z0-9_]{3,24}'}
-							minlength="3"
-							maxlength="24"
-							autocapitalize="none"
-							required
-						/><small>3–24 lowercase letters, numbers, or underscores.</small></label
-					>
-				{:else}
-					{#if mode !== 'reset-password'}<label class="field"
-							>Email<input
-								name="email"
-								type="email"
-								autocomplete="email"
-								maxlength="320"
+							value={page.url.searchParams.get('u') || ''}
+						/>{/if}
+					{#if mode === 'onboarding'}
+						<label class="field"
+							>Display name<input
+								name="displayName"
+								autocomplete="name"
+								maxlength="60"
 								required
 							/></label
-						>{/if}
-					{#if mode !== 'forgot-password'}<label class="field"
-							>Password<input
-								name="password"
-								type="password"
-								autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
-								minlength={mode === 'login' ? 1 : 10}
-								maxlength="200"
+						>
+						<label class="field"
+							>Username<input
+								name="username"
+								value={initialUsername}
+								pattern={'[a-z0-9_]{3,24}'}
+								minlength="3"
+								maxlength="24"
+								autocapitalize="none"
 								required
-							/>{#if mode !== 'login'}<small>At least 10 characters.</small>{/if}</label
+							/><small>3–24 lowercase letters, numbers, or underscores.</small></label
+						>
+					{:else}
+						{#if mode !== 'reset-password'}<label class="field"
+								>Email<input
+									name="email"
+									type="email"
+									autocomplete="email"
+									maxlength="320"
+									required
+								/></label
+							>{/if}
+						{#if mode !== 'forgot-password'}<label class="field"
+								>Password<span class="password-field"
+									><input
+										name="password"
+										type={showPassword ? 'text' : 'password'}
+										autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
+										minlength={mode === 'login' ? 1 : 10}
+										maxlength="200"
+										required
+									/><button
+										type="button"
+										class="password-toggle"
+										aria-label={showPassword ? 'Hide password' : 'Show password'}
+										aria-pressed={showPassword}
+										onclick={() => (showPassword = !showPassword)}
+										>{#if showPassword}<EyeOff size={19} />{:else}<Eye size={19} />{/if}</button
+									></span
+								>{#if mode !== 'login'}<small>At least 10 characters.</small>{/if}</label
+							>{/if}
+					{/if}
+					{#if form?.error}<p class="auth-error" role="alert">{form.error}</p>{/if}
+					{#if form?.success}<p role="status">{form.success}</p>{/if}
+					{#if page.url.searchParams.has('expired')}<p class="auth-error" role="alert">
+							This link is invalid or expired. Request a new one.
+						</p>{/if}
+					{#if page.url.searchParams.has('reset')}<p role="status">
+							Password updated. Sign in with your new password.
+						</p>{/if}
+					<button class="button full" disabled={busy} aria-busy={busy}
+						>{busy ? 'One moment…' : labels[mode]}</button
+					>
+					{#if mode === 'login'}<a class="text-link" href="/forgot-password"
+							>Forgot your password?</a
 						>{/if}
-				{/if}
-				{#if form?.error}<p class="auth-error" role="alert">{form.error}</p>{/if}
-				{#if form?.success}<p role="status">{form.success}</p>{/if}
-				{#if page.url.searchParams.has('expired')}<p class="auth-error" role="alert">
-						This link is invalid or expired. Request a new one.
-					</p>{/if}
-				{#if page.url.searchParams.has('reset')}<p role="status">
-						Password updated. Sign in with your new password.
-					</p>{/if}
-				<button class="button full" disabled={busy} aria-busy={busy}
-					>{busy ? 'One moment…' : labels[mode]}</button
-				>
-				{#if mode === 'login'}<a class="text-link" href="/forgot-password">Forgot your password?</a
-					>{/if}
-			</form>
+				</form>
+			{/if}
 		</div>
 	</main>
 </div>

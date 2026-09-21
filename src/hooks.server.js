@@ -11,9 +11,11 @@ export async function handle({ event, resolve }) {
 				)
 		}
 	});
-	const {
-		data: { user }
-	} = await event.locals.supabase.auth.getUser();
+	// Public pages never need a remote session lookup or session-refresh cookies.
+	const needsUser =
+		event.url.pathname.startsWith('/dashboard') ||
+		['/onboarding', '/reset-password'].includes(event.url.pathname);
+	const user = needsUser ? (await event.locals.supabase.auth.getUser()).data.user : null;
 	event.locals.user = user;
 	if (
 		(event.url.pathname.startsWith('/dashboard') ||

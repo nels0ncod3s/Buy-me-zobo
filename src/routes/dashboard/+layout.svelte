@@ -136,6 +136,8 @@
 			<div>
 				<span class="badge">CREATOR WORKSPACE</span>{#if $creator.username}<a
 						href={creatorPath($creator.username)}
+						target="_blank"
+						rel="noopener noreferrer"
 						class="text-link">View page <ArrowUpRight size={15} /></a
 					>{/if}
 			</div>

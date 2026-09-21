@@ -250,23 +250,21 @@ export function handler(name: string) {
 				await limit('payment-email:' + body.email.toLowerCase(), 10);
 				const reference = 'zobo-' + crypto.randomUUID();
 				checked(
-					await db
-						.from('support_transactions')
-						.insert({
-							creator_id: p.id,
-							provider: 'paystack',
-							provider_reference: reference,
-							quantity: body.quantity,
-							support_amount: amounts.total,
-							total_charged: amounts.total,
-							platform_fee: amounts.platform,
-							creator_net_amount: amounts.net,
-							supporter_email: body.email.trim(),
-							supporter_name: typeof body.name === 'string' ? body.name.trim().slice(0, 100) : null,
-							message: typeof body.note === 'string' ? body.note.trim().slice(0, 500) : null,
-							show_name_publicly: body.showName === true,
-							show_message_publicly: body.showMessage === true
-						})
+					await db.from('support_transactions').insert({
+						creator_id: p.id,
+						provider: 'paystack',
+						provider_reference: reference,
+						quantity: body.quantity,
+						support_amount: amounts.total,
+						total_charged: amounts.total,
+						platform_fee: amounts.platform,
+						creator_net_amount: amounts.net,
+						supporter_email: body.email.trim(),
+						supporter_name: typeof body.name === 'string' ? body.name.trim().slice(0, 100) : null,
+						message: typeof body.note === 'string' ? body.note.trim().slice(0, 500) : null,
+						show_name_publicly: body.showName === true,
+						show_message_publicly: body.showMessage === true
+					})
 				);
 				const data = await paystack('/transaction/initialize', {
 					email: body.email,

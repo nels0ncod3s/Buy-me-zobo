@@ -87,8 +87,8 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 summary:focus-visible {
-	outline: 3px solid #b15976;
-	outline-offset: 5px;
+	outline: 2px solid #b15976;
+	outline-offset: 2px;
 }
 ::selection {
 	background: var(--pink);
@@ -1813,5 +1813,62 @@ fieldset.field legend {
 	.hero {
 		min-height: calc(100svh - 84px);
 		align-content: center;
+	}
+}
+
+/* Keep input focus attached to the field instead of a detached outer frame. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+	outline: 2px solid #b15976;
+	outline-offset: 0;
+	box-shadow: none;
+}
+.password-field {
+	position: relative;
+	display: block;
+}
+.password-field input {
+	width: 100%;
+	padding-right: 48px;
+}
+.password-toggle {
+	position: absolute;
+	right: 4px;
+	top: 50%;
+	transform: translateY(-50%);
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+}
+.password-toggle:hover {
+	color: var(--wine);
+	background: #f3ebdf;
+}
+.how-section {
+	padding-block: clamp(40px, 7vh, 72px);
+}
+#pricing {
+	padding-block: clamp(32px, 5vh, 56px);
+}
+.faq-section {
+	min-height: 100svh;
+	padding-block: clamp(48px, 8vh, 88px);
+	align-content: center;
+	align-items: start;
+	border-top: 1px solid var(--line);
+}
+@media (max-width: 760px) {
+	.faq-section {
+		gap: 28px;
+	}
+	.faq-list details {
+		padding-block: 18px;
 	}
 }

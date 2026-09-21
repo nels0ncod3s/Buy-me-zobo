@@ -2,7 +2,7 @@
 	import { getContext } from 'svelte';
 	const creator = getContext('creator');
 	import { validateUsername, notify, creatorPath } from '$lib/ui.js';
-	import { saveProfile, uploadImage, logout } from '$lib/account.js';
+	import { saveProfile, uploadImage } from '$lib/account.js';
 	import { getSupabase } from '$lib/supabase/client.js';
 	import { invalidateAll } from '$app/navigation';
 	let unitAmount = $state($creator.unitAmount),
@@ -113,8 +113,11 @@
 				<h3 class="section-title">Your profile</h3>
 				<p class="inline-note">The face and story behind every zobo.</p>
 			</div>
-			{#if $creator.username}<a class="text-link" href={creatorPath($creator.username)}
-					>Preview <ArrowUpRight size={15} /></a
+			{#if $creator.username}<a
+					class="text-link"
+					href={creatorPath($creator.username)}
+					target="_blank"
+					rel="noopener noreferrer">Preview <ArrowUpRight size={15} /></a
 				>{/if}
 		</div>
 		<div class="photo-row">
@@ -187,13 +190,13 @@
 					placeholder="What should we call you?"
 				/></label
 			><label class="field"
-				>Page address<input
+				>Username<input
 					bind:value={username}
 					maxlength="24"
 					autocapitalize="none"
 					spellcheck="false"
 					placeholder="yourname"
-				/><small>/creator/{username || 'yourname'}</small></label
+				/><small>/{username || 'yourname'}</small></label
 			><label class="field wide"
 				>Your story<textarea
 					rows="4"
@@ -320,7 +323,6 @@
 	<section class="panel">
 		<h3 class="section-title">Your account</h3>
 		<p class="inline-note">{$creator.email}</p>
-		<ActionButton action={logout} busyLabel="Signing out…">Log out</ActionButton>
 	</section>
 </div>
 
