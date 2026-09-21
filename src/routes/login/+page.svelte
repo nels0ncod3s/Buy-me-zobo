@@ -40,10 +40,8 @@
 				action={() => goto('/dashboard')}>Open demo dashboard <ArrowRight size={16} /></ActionButton
 			>
 			<div class="auth-demo-note">
-				Login is mocked for now. This opens the profile saved on this browser and does not
-				authenticate an account.
+				Demo only · Opens your saved browser profile. No account authentication.
 			</div>
 		</div>
-		<span class="auth-bottom">A LITTLE LOVE FOR WHAT YOU MAKE.</span>
 	</main>
 </div>

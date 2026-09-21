@@ -121,10 +121,8 @@
 					>
 				</form>{/if}
 			<div class="auth-demo-note">
-				Demo mode: no password or authentication is required. Your profile is saved in this browser.
-				Creating a new demo replaces the previous profile on this device.
+				Demo only · Saved on this device. Creating a page replaces your previous demo.
 			</div>
 		</div>
-		<span class="auth-bottom">A LITTLE LOVE FOR WHAT YOU MAKE.</span>
 	</main>
 </div>

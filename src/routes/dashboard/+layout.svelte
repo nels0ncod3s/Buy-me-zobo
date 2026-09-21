@@ -1,5 +1,7 @@
 <script>
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
+	import ActionButton from '$lib/components/ActionButton.svelte';
 	import {
 		LayoutDashboard,
 		Heart,
@@ -8,7 +10,8 @@
 		Menu,
 		X,
 		ArrowUpRight,
-		ChevronRight
+		ChevronRight,
+		LogOut
 	} from '@lucide/svelte';
 	import { creator, ready, creatorPath } from '$lib/demo.js';
 	import Brand from '$lib/components/Brand.svelte';
@@ -77,7 +80,7 @@
 				onclick={close}><X size={20} /></button
 			>
 		</div>
-		<span class="sidebar-caption">YOUR CREATIVE CORNER</span>
+		<span class="sidebar-caption">WORKSPACE</span>
 		<nav aria-label="Dashboard navigation">
 			{#each items as item}<a
 					href={item.href}
@@ -90,8 +93,8 @@
 				>{/each}
 		</nav>
 		<div class="sidebar-nudge">
-			<ZoboCup class="sidebar-cup" /><strong>Keep making.<br />We'll hold the cup.</strong>
-			<p>Your work deserves a little love.</p>
+			<ZoboCup class="sidebar-cup" /><strong>Keep creating.</strong>
+			<p>A little support goes a long way.</p>
 			<a href="/example">Explore the example <ArrowUpRight size={14} /></a>
 		</div>
 		<a href="/dashboard/settings" class="sidebar-user"
@@ -104,6 +107,16 @@
 					>{$creator.username ? `@${$creator.username}` : 'Make it yours in Settings'}</span
 				>
 			</div></a
+		>
+		<ActionButton
+			class="sidebar-logout"
+			busyLabel="Leaving…"
+			action={async () => {
+				open = false;
+				await goto('/login');
+			}}
+			success="Demo closed. Your profile is still saved on this device."
+			><LogOut size={16} /> Log out</ActionButton
 		>
 	</aside>
 	<div class="dash-main">
@@ -149,13 +162,13 @@
 		overflow-y: auto;
 	}
 	.sidebar-brand {
-		margin-bottom: 45px;
+		margin-bottom: 24px;
 		display: flex;
 		justify-content: space-between;
 	}
 	.sidebar-caption {
-		font-size: 14px;
-		letter-spacing: 0.12em;
+		font-size: 11px;
+		letter-spacing: 0.1em;
 		color: var(--muted);
 		margin: 0 12px 15px;
 	}
@@ -182,6 +195,7 @@
 		margin-left: auto;
 	}
 	.sidebar-nudge {
+		flex-shrink: 0;
 		background: #f0d7df;
 		border-radius: 12px;
 		padding: 20px;
@@ -191,7 +205,7 @@
 		overflow: hidden;
 	}
 	:global(.sidebar-cup) {
-		width: 72px;
+		width: 48px;
 		float: right;
 		transform: rotate(10deg);
 		margin: 0 -10px 5px 0;
@@ -280,10 +294,40 @@
 		min-width: 0;
 	}
 	.sidebar-nudge {
-		margin-top: 45px;
+		margin-top: 24px;
 	}
 	.sidebar-user {
 		margin-top: auto;
+		flex-shrink: 0;
+	}
+	:global(.sidebar-logout) {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 44px;
+		padding: 10px 12px;
+		margin-top: 10px;
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		background: transparent;
+		color: var(--wine);
+		flex-shrink: 0;
+	}
+	@media (max-height: 740px) {
+		.sidebar-nudge {
+			padding: 12px;
+			margin-block: 18px;
+		}
+		.sidebar-nudge p {
+			display: none;
+		}
+		.sidebar-nudge strong {
+			margin-top: 0;
+		}
+		.sidebar-nudge a {
+			clear: both;
+			font-size: 12px;
+		}
 	}
 	@media (max-width: 1000px) {
 		.dashboard-shell {
